@@ -1,0 +1,2 @@
+- Strongly prefer integration tests and end-to-end integration tests over unit tests. 
+- Strongly prefer exercising actual system behaviour over 'the tests pass so it must work'. 
