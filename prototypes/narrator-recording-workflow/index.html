@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Prototype: Agreed Gentle Workflow</title>
+    <style>
+      :root {
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+        color: #35403b;
+        background: #f7f2eb;
+      }
+
+      * { box-sizing: border-box; }
+      body { margin: 0; min-width: 320px; }
+      button { font: inherit; cursor: pointer; }
+      button:disabled { cursor: not-allowed; opacity: .45; }
+      h1, h2, p { margin-top: 0; }
+      .prototype-flag { position: fixed; z-index: 20; top: 12px; right: 14px; max-width: min(260px, calc(100vw - 28px)); padding: 7px 10px; border-radius: 12px; background: rgba(35, 43, 40, .88); color: #fff; font-size: .68rem; line-height: 1.35; }
+      .prototype-flag strong { display: block; letter-spacing: .08em; text-transform: uppercase; }
+      .prototype-flag span { color: #d8e2dc; }
+      .guide { min-height: 100vh; display: grid; place-items: center; padding: 52px 24px 90px; background: linear-gradient(145deg, #fbf2e8, #eef4ed); }
+      .shell { width: min(760px, 100%); text-align: center; }
+      .back { margin-bottom: 30px; }
+      .quiet { border: 0; border-radius: 999px; background: transparent; color: #66726c; padding: 9px 12px; }
+      .quiet:hover { background: rgba(63, 77, 70, .07); }
+      .label { display: inline-block; margin-bottom: 18px; padding: 7px 11px; border-radius: 999px; background: rgba(255, 255, 255, .76); color: #6a756f; font-size: .78rem; font-weight: 750; }
+      h1 { margin-bottom: 12px; font-family: Georgia, serif; font-size: clamp(2rem, 5vw, 3.7rem); font-weight: 500; line-height: 1.1; }
+      h2 { font-family: Georgia, serif; font-size: 1.45rem; font-weight: 500; }
+      .intro { max-width: 540px; margin: 0 auto 30px; color: #69756f; font-size: 1.04rem; line-height: 1.55; }
+      .paper { max-width: 650px; margin: 0 auto 26px; padding: 30px 34px; border-radius: 22px; background: rgba(255, 255, 255, .78); box-shadow: 0 12px 38px rgba(71, 78, 73, .08); }
+      .book-text { font-family: Georgia, serif; font-size: clamp(1.15rem, 2.5vw, 1.65rem); line-height: 1.7; text-align: left; }
+      .primary { border: 0; border-radius: 999px; background: #456f5f; color: #fff; min-width: 180px; padding: 14px 24px; font-weight: 800; box-shadow: 0 8px 24px rgba(56, 94, 79, .18); }
+      .primary.record { background: #b54a42; }
+      .primary.stop { background: #343c39; }
+      .secondary { border: 1px solid #74837c; border-radius: 999px; background: transparent; color: #56645e; padding: 10px 16px; font-weight: 750; }
+      .actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px; }
+      .stack { display: grid; gap: 12px; justify-items: center; }
+      .save-note { min-height: 1.4em; margin: 12px 0 0; color: #277154; font-size: .86rem; font-weight: 800; }
+      .text-nav { display: flex; justify-content: center; gap: 20px; margin-top: 22px; }
+      .project-card { width: min(560px, 100%); margin: 0 auto 18px; padding: 22px; border: 1px solid rgba(91, 105, 98, .14); border-radius: 20px; background: rgba(255, 255, 255, .68); }
+      .project-card p { margin-bottom: 8px; color: #718078; }
+      .project-card strong { display: block; margin-bottom: 16px; font-family: Georgia, serif; font-size: 1.45rem; }
+      .soft-list { display: grid; gap: 10px; max-width: 600px; margin: 0 auto 24px; text-align: left; }
+      .soft-row { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 16px 18px; border-radius: 16px; background: rgba(255,255,255,.7); }
+      .soft-row strong { display: block; margin-bottom: 3px; }
+      .soft-row span { color: #718078; font-size: .82rem; }
+      .player { display: flex; align-items: center; gap: 14px; margin: 18px 0; padding: 12px 14px; border-radius: 14px; background: #edf2ee; }
+      .play { display: grid; place-items: center; width: 42px; height: 42px; flex: 0 0 auto; border: 0; border-radius: 50%; background: #456f5f; color: #fff; }
+      .player-line { position: relative; flex: 1; height: 6px; border-radius: 999px; background: #cad6cf; }
+      .player-line::after { content: ''; position: absolute; inset: 0 44% 0 0; border-radius: inherit; background: #6c917f; }
+      .trim { position: relative; height: 72px; margin: 24px 0; border-radius: 14px; background: repeating-linear-gradient(90deg, #d5dfd9 0 3px, transparent 3px 7px), #edf2ee; }
+      .trim::before, .trim::after { content: ''; position: absolute; top: -5px; bottom: -5px; width: 10px; border-radius: 999px; background: #456f5f; }
+      .trim::before { left: 10%; }
+      .trim::after { right: 12%; }
+      .trim input { position: absolute; left: 8%; width: 84%; accent-color: #456f5f; }
+      .trim input:first-child { top: 15px; }
+      .trim input:last-child { bottom: 15px; }
+      .check { max-width: 560px; margin: 0 auto 24px; padding: 22px; border-radius: 20px; background: rgba(255,255,255,.75); text-align: left; }
+      .check strong { display: block; margin-bottom: 8px; }
+      .countdown { display: grid; place-items: center; width: 120px; height: 120px; margin: 22px auto; border: 8px solid rgba(69,111,95,.15); border-radius: 50%; color: #456f5f; font-family: Georgia, serif; font-size: 3.6rem; }
+      .done-mark { display: grid; place-items: center; width: 84px; height: 84px; margin: 0 auto 22px; border-radius: 50%; background: #dcebe3; color: #277154; font-size: 2.5rem; }
+      @media (max-width: 600px) {
+        .guide { padding-inline: 16px; }
+        .paper { padding: 24px 22px; }
+        .soft-row { align-items: flex-start; flex-direction: column; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="prototype-flag"><strong>Prototype</strong><span id="test-state"></span></div>
+    <main id="prototype"></main>
+    <script>
+      // PROTOTYPE: The agreed Gentle workflow for issue 4. State is in memory only.
+      const parts = [
+        ['Chapter One · Part 1', 'The first morning of autumn arrived without ceremony. Mara opened the shop, set the kettle on, and found a letter beneath the door.'],
+        ['Chapter One · Part 2', 'She turned it over twice before she broke the seal. Inside was a single page and a date that had not happened yet.'],
+        ['Chapter Two · Part 1', 'By noon, the letter had changed three times. Each new sentence told her where not to go.'],
+      ];
+
+      const flow = {
+        screen: 'home',
+        segment: 0,
+        recordState: 'ready',
+        countdown: 3,
+        saved: [false, false, false],
+        saveNote: '',
+        selected: 0,
+        trimSet: false,
+        check: 0,
+      };
+
+      const checks = [
+        ['Every part has a recording', 'The Narration Application found a selected recording for every part.'],
+        ['The book order is complete', 'The opening, chapters, and ending are in the expected order.'],
+        ['The audiobook is ready for your final listen', 'Listen to any part that you want to check before export.'],
+      ];
+
+      function shell(content) {
+        return `<section class="guide"><div class="shell">${content}</div></section>`;
+      }
+
+      function back(action, label = 'Back') {
+        return `<button class="quiet back" data-action="${action}">← ${label}</button>`;
+      }
+
+      function renderHome() {
+        return shell(`<div class="label">Welcome back</div><h1>What would you like to do?</h1><p class="intro">Your work is safe on this computer.</p><div class="project-card"><p>Continue your audiobook</p><strong>The Letter Tomorrow</strong><button class="primary" data-action="continue-project">Continue recording</button></div><button class="quiet" data-action="new-project">＋ New Project</button>`);
+      }
+
+      function renderChooseBook() {
+        return shell(`${back('home')}<div class="label">New Project</div><h1>Choose your book</h1><p class="intro">Select one EPUB file. The Narration Application will prepare the text for you.</p><button class="primary" data-action="choose-epub">Choose your EPUB file</button>`);
+      }
+
+      function renderBookReady() {
+        return shell(`${back('choose-book')}<div class="done-mark">✓</div><h1>Your book is ready</h1><p class="intro"><em>The Letter Tomorrow</em> is ready for narration.</p><button class="primary" data-action="microphone">Continue</button>`);
+      }
+
+      function renderMicrophone() {
+        return shell(`${back('book-ready')}<div class="label">Microphone</div><h1>Let us check your sound</h1><p class="intro">Speak for three seconds. You will hear the sample after the test.</p><div class="stack"><button class="primary" data-action="test-microphone">Test microphone</button><button class="quiet">Choose another microphone</button></div>`);
+      }
+
+      function renderMicrophoneResult() {
+        return shell(`${back('microphone')}<div class="label">Microphone test</div><h1>Can you hear yourself clearly?</h1><div class="paper"><div class="player"><button class="play" aria-label="Play microphone test">▶</button><div class="player-line"></div><span>3 sec</span></div></div><div class="actions"><button class="primary" data-action="microphone-ok">Yes, continue</button><button class="secondary" data-action="microphone">Try again</button></div>`);
+      }
+
+      function recordControls() {
+        if (flow.recordState === 'countdown') return `<div class="countdown">${flow.countdown}</div>`;
+        if (flow.recordState === 'recording') return `<div class="stack"><button class="primary stop" data-action="stop">Stop</button><button class="quiet" data-action="pause">Pause</button></div>`;
+        if (flow.recordState === 'paused') return `<div class="actions"><button class="primary" data-action="resume">Resume</button><button class="secondary" data-action="stop">Stop</button></div>`;
+        return `<button class="primary record" data-action="record">Record</button>`;
+      }
+
+      function renderRecording() {
+        const [label, text] = parts[flow.segment];
+        const heading = flow.recordState === 'recording' ? 'You are recording' : flow.recordState === 'paused' ? 'Recording paused' : 'Ready when you are';
+        const hasRecordings = flow.saved.some(Boolean);
+        return shell(`${back('home', 'My Project')}<div class="label">${label}</div><h1>${heading}</h1><p class="intro">Read at your own pace. Your work saves when you stop.</p><div class="paper book-text">${text}</div>${recordControls()}<p class="save-note">${flow.saveNote}</p><div class="text-nav"><button class="quiet" data-action="previous-text">← Previous text</button><button class="quiet" data-action="next-text">Next text →</button></div>${hasRecordings ? '<button class="quiet" data-action="recordings">My recordings</button>' : ''}`);
+      }
+
+      function renderRecordings() {
+        const savedCount = flow.saved.filter(Boolean).length;
+        return shell(`${back('recording', 'Keep recording')}<div class="label">My recordings</div><h1>${savedCount} of ${flow.saved.length} parts recorded</h1><p class="intro">Review now, or return to recording and review everything later.</p><div class="stack"><button class="primary" data-action="review-next">Review next recording</button><button class="quiet" data-action="browse">Browse all recordings</button></div>`);
+      }
+
+      function renderBrowse() {
+        const rows = parts.map(([label], index) => `<div class="soft-row"><div><strong>${label}</strong><span>${flow.saved[index] ? 'Recording saved' : 'Not recorded yet'}</span></div>${flow.saved[index] ? `<button class="secondary" data-action="review:${index}">Review</button>` : ''}</div>`).join('');
+        return shell(`${back('recordings', 'My recordings')}<div class="label">All recordings</div><h1>Choose a part</h1><div class="soft-list">${rows}</div>`);
+      }
+
+      function renderReview() {
+        const [label] = parts[flow.selected];
+        return shell(`${back('recordings', 'My recordings')}<div class="label">${label}</div><h1>Listen when you are ready</h1><div class="paper"><div class="player"><button class="play" aria-label="Play recording">▶</button><div class="player-line"></div><span>12 sec</span></div></div><div class="stack"><button class="primary" data-action="review-done">Done</button><button class="quiet" data-action="record-again">Record again</button><button class="quiet" data-action="trim">Adjust the start or end</button><button class="quiet">Other recordings</button></div>`);
+      }
+
+      function renderTrim() {
+        return shell(`${back('review', 'Review')}<div class="label">Adjust the start or end</div><h1>Keep only what you want</h1><p class="intro">Move either end of the audio bar. The full recording stays safe.</p><div class="paper"><div class="trim" aria-label="Test Trim control"><input type="range" min="0" max="100" value="10" aria-label="Start of recording" /><input type="range" min="0" max="100" value="88" aria-label="End of recording" /></div><div class="player"><button class="play" aria-label="Play adjusted recording">▶</button><div class="player-line"></div><span>10 sec</span></div></div><button class="primary" data-action="trim-done">Done</button>`);
+      }
+
+      function renderReadyToCheck() {
+        return shell(`<div class="done-mark">✓</div><h1>Your audiobook is ready to check</h1><p class="intro">You recorded every part. The Narration Application will guide you through the final checks one at a time.</p><div class="actions"><button class="primary" data-action="start-checks">Start final review</button><button class="quiet" data-action="recordings">My recordings</button></div>`);
+      }
+
+      function renderFinalCheck() {
+        const [title, detail] = checks[flow.check];
+        return shell(`<div class="label">Final review · ${flow.check + 1} of ${checks.length}</div><h1>${title}</h1><div class="check"><strong>Check complete</strong><span>${detail}</span></div><button class="primary" data-action="next-check">Continue</button>`);
+      }
+
+      function renderExport() {
+        return shell(`<div class="label">Final review complete</div><h1>Your audiobook is ready</h1><p class="intro">The Narration Application will use the correct audio settings for your export.</p><button class="primary" data-action="export">Export audiobook</button>`);
+      }
+
+      function renderExported() {
+        return shell(`<div class="done-mark">✓</div><h1>Export complete</h1><p class="intro">Your audiobook files are ready.</p><div class="actions"><button class="primary">Open folder</button><button class="quiet" data-action="home">Done</button></div>`);
+      }
+
+      function render() {
+        const screens = {
+          home: renderHome,
+          'choose-book': renderChooseBook,
+          'book-ready': renderBookReady,
+          microphone: renderMicrophone,
+          'microphone-result': renderMicrophoneResult,
+          recording: renderRecording,
+          recordings: renderRecordings,
+          browse: renderBrowse,
+          review: renderReview,
+          trim: renderTrim,
+          'ready-to-check': renderReadyToCheck,
+          'final-check': renderFinalCheck,
+          export: renderExport,
+          exported: renderExported,
+        };
+        document.getElementById('prototype').innerHTML = screens[flow.screen]();
+        document.getElementById('test-state').textContent = `${flow.screen} · part ${flow.segment + 1} · ${flow.recordState} · ${flow.saved.filter(Boolean).length} saved`;
+      }
+
+      function startCountdown() {
+        flow.recordState = 'countdown';
+        flow.countdown = 3;
+        flow.saveNote = '';
+        render();
+        const tick = () => {
+          if (flow.recordState !== 'countdown') return;
+          flow.countdown -= 1;
+          if (flow.countdown === 0) {
+            flow.recordState = 'recording';
+            render();
+            return;
+          }
+          render();
+          window.setTimeout(tick, 700);
+        };
+        window.setTimeout(tick, 700);
+      }
+
+      function go(screen) {
+        flow.screen = screen;
+        render();
+      }
+
+      function act(action) {
+        const [name, value] = action.split(':');
+        if (name === 'home') go('home');
+        if (name === 'new-project') go('choose-book');
+        if (name === 'choose-epub') go('book-ready');
+        if (name === 'book-ready') go('book-ready');
+        if (name === 'microphone') go('microphone');
+        if (name === 'test-microphone') go('microphone-result');
+        if (name === 'microphone-ok' || name === 'continue-project') go('recording');
+        if (name === 'record') startCountdown();
+        if (name === 'pause') { flow.recordState = 'paused'; render(); }
+        if (name === 'resume') { flow.recordState = 'recording'; render(); }
+        if (name === 'stop') {
+          flow.recordState = 'stopped';
+          flow.saved[flow.segment] = true;
+          flow.saveNote = 'Saved';
+          if (flow.saved.every(Boolean)) {
+            render();
+            window.setTimeout(() => go('ready-to-check'), 500);
+          } else {
+            flow.segment = Math.min(flow.segment + 1, parts.length - 1);
+            render();
+            window.setTimeout(() => { flow.saveNote = ''; render(); }, 2200);
+          }
+        }
+        if (name === 'previous-text') { flow.segment = Math.max(0, flow.segment - 1); flow.saveNote = ''; render(); }
+        if (name === 'next-text') { flow.segment = Math.min(parts.length - 1, flow.segment + 1); flow.saveNote = ''; render(); }
+        if (name === 'recording') go('recording');
+        if (name === 'recordings') go('recordings');
+        if (name === 'browse') go('browse');
+        if (name === 'review-next') { flow.selected = Math.max(0, flow.saved.findIndex(Boolean)); go('review'); }
+        if (name === 'review') { flow.selected = Number(value); go('review'); }
+        if (name === 'review-done') go('recordings');
+        if (name === 'record-again') { flow.segment = flow.selected; go('recording'); }
+        if (name === 'trim') go('trim');
+        if (name === 'trim-done') { flow.trimSet = true; go('review'); }
+        if (name === 'start-checks') { flow.check = 0; go('final-check'); }
+        if (name === 'next-check') {
+          if (flow.check < checks.length - 1) { flow.check += 1; render(); }
+          else go('export');
+        }
+        if (name === 'export') go('exported');
+      }
+
+      document.addEventListener('click', (event) => {
+        const action = event.target.closest('[data-action]')?.dataset.action;
+        if (action) act(action);
+      });
+      render();
+    </script>
+  </body>
+</html>

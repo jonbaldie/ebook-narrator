@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Prototype Options: Simple Narrator Recording Views</title>
+    <style>
+      :root {
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+        color: #282a2d;
+        background: #f8f7f4;
+      }
+
+      * { box-sizing: border-box; }
+      body { margin: 0; min-width: 320px; }
+      button { font: inherit; cursor: pointer; }
+      button:disabled { cursor: not-allowed; opacity: .45; }
+      h1, h2, p { margin-top: 0; }
+      .prototype-flag { position: fixed; z-index: 20; top: 12px; right: 14px; padding: 5px 8px; border-radius: 999px; background: rgba(35, 38, 44, .8); color: #fff; font-size: .68rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+      .quiet-button { border: 0; background: transparent; color: inherit; padding: 9px 11px; border-radius: 999px; }
+      .quiet-button:hover { background: rgba(40, 42, 45, .07); }
+      .save-note { min-height: 1.4em; margin: 12px 0 0; color: #277154; font-size: .85rem; font-weight: 750; text-align: center; }
+      .record-controls { display: flex; align-items: center; justify-content: center; gap: 12px; }
+      .record-main { border: 0; border-radius: 999px; background: #b53b37; color: #fff; min-width: 150px; padding: 14px 26px; font-weight: 800; box-shadow: 0 8px 22px rgba(110, 38, 35, .18); }
+      .record-main.recording { background: #292a2d; }
+      .record-secondary { border: 1px solid currentColor; border-radius: 999px; background: transparent; color: inherit; padding: 10px 16px; font-weight: 700; }
+      .switcher { position: fixed; z-index: 30; left: 50%; bottom: 16px; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; min-width: 330px; padding: 8px 10px; border-radius: 18px; background: #1f2737; color: #fff; box-shadow: 0 12px 35px rgba(16, 23, 38, .3); }
+      .switcher > button { flex: 0 0 auto; width: 38px; height: 38px; border: 0; border-radius: 50%; background: #fff; color: #1f2737; font-size: 1.2rem; }
+      .switcher-copy { flex: 1; min-width: 0; text-align: center; }
+      .switcher-copy strong, .switcher-copy small { display: block; white-space: nowrap; }
+      .switcher-copy strong { font-size: .86rem; }
+      .switcher-copy small { margin-top: 2px; color: #c9d1df; font-size: .68rem; }
+
+      /* A: The text behaves like a calm ebook page. */
+      .book-first { min-height: 100vh; padding: 38px 34px 120px; background: #f3efe7; color: #2d2a26; }
+      .book-header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; max-width: 1180px; margin: 0 auto; color: #6c655d; font-size: .86rem; }
+      .book-header .right { justify-self: end; }
+      .book-title { font-family: Georgia, serif; color: #39342f; font-weight: 700; }
+      .book-page { position: relative; display: flex; flex-direction: column; justify-content: center; max-width: 850px; min-height: calc(100vh - 190px); margin: 0 auto; padding: 45px 80px; }
+      .book-kicker { color: #9a5b43; font-size: .76rem; font-weight: 800; letter-spacing: .1em; text-align: center; text-transform: uppercase; }
+      .book-copy { font-family: Georgia, 'Times New Roman', serif; font-size: clamp(1.45rem, 3vw, 2.4rem); line-height: 1.65; text-align: left; }
+      .book-copy p { margin-bottom: 1.2em; }
+      .edge-button { position: absolute; top: 50%; transform: translateY(-50%); display: grid; place-items: center; width: 46px; height: 46px; border: 1px solid #d8d0c3; border-radius: 50%; background: rgba(255, 255, 255, .55); color: #5d564e; font-size: 1.5rem; }
+      .edge-button.previous { left: 10px; }
+      .edge-button.next { right: 10px; }
+      .book-record { margin-top: 8px; text-align: center; }
+
+      /* B: The application guides one small action at a time. */
+      .gentle-guide { min-height: 100vh; display: grid; place-items: center; padding: 48px 24px 130px; background: linear-gradient(145deg, #fbf2e8, #eef4ed); color: #35403b; }
+      .guide-shell { width: min(760px, 100%); text-align: center; }
+      .guide-back { margin-bottom: 34px; color: #69756f; }
+      .guide-label { display: inline-block; margin-bottom: 18px; padding: 7px 11px; border-radius: 999px; background: rgba(255, 255, 255, .75); color: #6a756f; font-size: .78rem; font-weight: 750; }
+      .guide-shell h1 { margin-bottom: 12px; font-family: Georgia, serif; font-size: clamp(2rem, 5vw, 3.7rem); font-weight: 500; }
+      .guide-intro { max-width: 520px; margin: 0 auto 30px; color: #69756f; font-size: 1.05rem; line-height: 1.55; }
+      .guide-reading { max-width: 650px; margin: 0 auto 28px; padding: 30px 34px; border-radius: 22px; background: rgba(255, 255, 255, .76); box-shadow: 0 12px 38px rgba(71, 78, 73, .08); font-family: Georgia, serif; font-size: clamp(1.15rem, 2.5vw, 1.65rem); line-height: 1.7; text-align: left; }
+      .guide-move { display: flex; justify-content: center; gap: 20px; margin-top: 24px; color: #66726c; }
+
+      /* C: Text and recording each have one quiet area. */
+      .quiet-studio { min-height: 100vh; padding: 62px 54px 130px; background: #e9edf2; color: #27313d; }
+      .studio-top { display: flex; justify-content: space-between; align-items: center; max-width: 1180px; margin: 0 auto 26px; color: #687380; font-size: .85rem; }
+      .studio-grid { display: grid; grid-template-columns: minmax(230px, .65fr) minmax(380px, 1.6fr); gap: 28px; max-width: 1180px; min-height: 610px; margin: 0 auto; }
+      .studio-control { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 34px; border-radius: 28px; background: #dce3eb; text-align: center; }
+      .studio-control h1 { margin-bottom: 8px; font-family: Georgia, serif; font-size: 2rem; font-weight: 500; }
+      .studio-control .muted { max-width: 260px; color: #687583; line-height: 1.5; }
+      .studio-record { display: grid; place-items: center; width: 138px; height: 138px; margin: 24px 0 18px; border: 12px solid rgba(255,255,255,.7); border-radius: 50%; background: #b94843; color: #fff; font-size: 1.1rem; font-weight: 850; box-shadow: 0 12px 30px rgba(70, 81, 95, .15); }
+      .studio-record.recording { background: #263241; }
+      .studio-pause { border: 0; background: transparent; color: #596776; font-weight: 750; }
+      .studio-text { display: flex; flex-direction: column; justify-content: center; padding: 60px 70px; border-radius: 28px; background: #fbfcfd; box-shadow: 0 14px 34px rgba(58, 72, 88, .09); }
+      .studio-text .label { color: #7b8794; font-size: .76rem; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
+      .studio-text .copy { font-family: Georgia, serif; font-size: clamp(1.35rem, 2.6vw, 2.1rem); line-height: 1.65; }
+      .studio-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 26px; color: #687583; }
+
+      @media (max-width: 780px) {
+        .book-first { padding-inline: 10px; }
+        .book-header { padding-inline: 14px; }
+        .book-page { padding: 40px 55px; }
+        .quiet-studio { padding: 58px 18px 130px; }
+        .studio-grid { grid-template-columns: 1fr; }
+        .studio-control { min-height: 270px; }
+        .studio-text { min-height: 450px; padding: 42px 34px; }
+        .switcher { min-width: min(330px, calc(100vw - 24px)); }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="prototype-flag">Prototype</div>
+    <main id="prototype"></main>
+    <nav class="switcher" aria-label="Prototype option selector">
+      <button id="previous-option" aria-label="Previous option">←</button>
+      <div class="switcher-copy"><strong id="option-name"></strong><small id="test-state"></small></div>
+      <button id="next-option" aria-label="Next option">→</button>
+    </nav>
+
+    <script>
+      // PROTOTYPE: Three simple recording views, switchable with ?variant=.
+      const options = [
+        { key: 'A', name: 'Book first' },
+        { key: 'B', name: 'Gentle guide' },
+        { key: 'C', name: 'Quiet studio' },
+      ];
+
+      const test = {
+        segment: 1,
+        recordState: 'ready',
+        savedTakes: 0,
+        saveNote: '',
+      };
+
+      const textBySegment = [
+        ['Chapter One', 'The first morning of autumn arrived without ceremony. Mara opened the shop, set the kettle on, and found a letter beneath the door.', 'It was addressed in her own handwriting.'],
+        ['Chapter One', 'She turned it over twice before she broke the seal. Inside was a single page and a date that had not happened yet.', 'The kettle began to sing behind her.'],
+        ['Chapter Two', 'By noon, the letter had changed three times. Each new sentence told her where not to go.', 'Mara put on her coat.'],
+      ];
+
+      function currentOption() {
+        const key = new URLSearchParams(location.search).get('variant') || 'A';
+        return options.find((option) => option.key === key) || options[0];
+      }
+
+      function currentText() {
+        return textBySegment[test.segment - 1];
+      }
+
+      function mainRecordControl() {
+        if (test.recordState === 'recording') {
+          return `<div class="record-controls"><button class="record-secondary" data-action="pause">Pause</button><button class="record-main recording" data-action="stop">Stop</button></div>`;
+        }
+        if (test.recordState === 'paused') {
+          return `<div class="record-controls"><button class="record-secondary" data-action="resume">Resume</button><button class="record-main recording" data-action="stop">Stop</button></div>`;
+        }
+        return `<div class="record-controls"><button class="record-main" data-action="record">Record</button></div>`;
+      }
+
+      function renderBookFirst() {
+        const [chapter, first, second] = currentText();
+        return `<section class="book-first">
+          <header class="book-header"><button class="quiet-button" type="button">← Project</button><span class="book-title">The Letter Tomorrow</span><button class="quiet-button right" type="button">Recordings</button></header>
+          <article class="book-page"><button class="edge-button previous" data-action="previous" aria-label="Previous text">‹</button><div class="book-kicker">${chapter} · ${test.segment} of 3</div><div class="book-copy"><p>${first}</p><p>${second}</p></div><button class="edge-button next" data-action="next" aria-label="Next text">›</button><div class="book-record">${mainRecordControl()}<p class="save-note">${test.saveNote}</p></div></article>
+        </section>`;
+      }
+
+      function renderGentleGuide() {
+        const [chapter, first, second] = currentText();
+        const heading = test.recordState === 'recording' ? 'You are recording' : test.recordState === 'paused' ? 'Recording paused' : 'Ready when you are';
+        return `<section class="gentle-guide"><div class="guide-shell"><button class="quiet-button guide-back" type="button">← Back to my book</button><div class="guide-label">${chapter} · Part ${test.segment}</div><h1>${heading}</h1><p class="guide-intro">Read at your own pace. Your work saves when you stop.</p><div class="guide-reading">${first}<br /><br />${second}</div>${mainRecordControl()}<p class="save-note">${test.saveNote}</p><div class="guide-move"><button class="quiet-button" data-action="previous">← Previous text</button><button class="quiet-button" data-action="next">Next text →</button></div></div></section>`;
+      }
+
+      function renderQuietStudio() {
+        const [chapter, first, second] = currentText();
+        const stateLabel = test.recordState === 'recording' ? 'Recording' : test.recordState === 'paused' ? 'Paused' : 'Ready';
+        return `<section class="quiet-studio"><header class="studio-top"><button class="quiet-button" type="button">← The Letter Tomorrow</button><button class="quiet-button" type="button">My recordings</button></header><div class="studio-grid"><aside class="studio-control"><h1>${stateLabel}</h1><p class="muted">Select the button when you want to ${test.recordState === 'recording' || test.recordState === 'paused' ? 'save this recording' : 'start'}.</p><button class="studio-record ${test.recordState === 'recording' || test.recordState === 'paused' ? 'recording' : ''}" data-action="${test.recordState === 'ready' || test.recordState === 'stopped' ? 'record' : 'stop'}">${test.recordState === 'ready' || test.recordState === 'stopped' ? 'Record' : 'Stop'}</button>${test.recordState === 'recording' ? '<button class="studio-pause" data-action="pause">Pause</button>' : test.recordState === 'paused' ? '<button class="studio-pause" data-action="resume">Resume</button>' : ''}<p class="save-note">${test.saveNote}</p></aside><article class="studio-text"><div class="label">${chapter} · Narration Segment ${test.segment}</div><div class="copy"><p>${first}</p><p>${second}</p></div><div class="studio-nav"><button class="quiet-button" data-action="previous">← Previous</button><span>${test.segment} of 3</span><button class="quiet-button" data-action="next">Next →</button></div></article></div></section>`;
+      }
+
+      function render() {
+        const option = currentOption();
+        const views = { A: renderBookFirst, B: renderGentleGuide, C: renderQuietStudio };
+        document.getElementById('prototype').innerHTML = views[option.key]();
+        document.getElementById('option-name').textContent = `${option.key} — ${option.name}`;
+        document.getElementById('test-state').textContent = `Segment ${test.segment} · ${test.recordState} · ${test.savedTakes} saved`;
+      }
+
+      function act(action) {
+        if (action === 'record') { test.recordState = 'recording'; test.saveNote = ''; }
+        if (action === 'pause') { test.recordState = 'paused'; }
+        if (action === 'resume') { test.recordState = 'recording'; }
+        if (action === 'stop') {
+          test.recordState = 'stopped';
+          test.savedTakes += 1;
+          test.saveNote = 'Saved';
+          window.setTimeout(() => { test.saveNote = ''; render(); }, 2500);
+        }
+        if (action === 'previous') { test.segment = Math.max(1, test.segment - 1); }
+        if (action === 'next') { test.segment = Math.min(3, test.segment + 1); }
+        render();
+      }
+
+      function moveOption(direction) {
+        const current = currentOption();
+        const index = options.findIndex((option) => option.key === current.key);
+        const next = options[(index + direction + options.length) % options.length];
+        const query = new URLSearchParams(location.search);
+        query.set('variant', next.key);
+        history.replaceState({}, '', `${location.pathname}?${query}`);
+        render();
+      }
+
+      document.addEventListener('click', (event) => {
+        const action = event.target.closest('[data-action]')?.dataset.action;
+        if (action) act(action);
+      });
+      document.getElementById('previous-option').addEventListener('click', () => moveOption(-1));
+      document.getElementById('next-option').addEventListener('click', () => moveOption(1));
+      document.addEventListener('keydown', (event) => {
+        if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName) || document.activeElement.isContentEditable) return;
+        if (event.key === 'ArrowLeft') moveOption(-1);
+        if (event.key === 'ArrowRight') moveOption(1);
+      });
+      render();
+    </script>
+  </body>
+</html>
