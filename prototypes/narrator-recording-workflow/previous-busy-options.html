@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Previous Prototype: Narrator Recording Workflow</title>
+    <style>
+      :root {
+        --ink: #172033;
+        --muted: #5e6a80;
+        --line: #d9dfeb;
+        --surface: #ffffff;
+        --canvas: #f4f7fb;
+        --accent: #2855bf;
+        --accent-soft: #e7eeff;
+        --good: #147a53;
+        --warn: #a65d00;
+        --danger: #b42318;
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        color: var(--ink);
+        background: var(--canvas);
+      }
+
+      * { box-sizing: border-box; }
+      body { margin: 0; min-width: 320px; }
+      button { font: inherit; cursor: pointer; }
+      button:disabled { cursor: not-allowed; opacity: .45; }
+      h1, h2, h3, p { margin-top: 0; }
+      h1 { font-size: clamp(1.45rem, 3vw, 2.2rem); margin-bottom: .35rem; }
+      h2 { font-size: 1.1rem; margin-bottom: .8rem; }
+      h3 { font-size: .86rem; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); margin-bottom: .55rem; }
+      .page { max-width: 1440px; margin: 0 auto; padding: 28px 24px 130px; }
+      .eyebrow { color: var(--danger); font-size: .78rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+      .lede, .muted { color: var(--muted); }
+      .notice { border-left: 4px solid var(--warn); background: #fff7e9; color: #614000; padding: 11px 14px; border-radius: 4px; margin: 20px 0; }
+      .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; box-shadow: 0 5px 16px rgba(26, 49, 97, .05); }
+      .button { border: 1px solid var(--accent); border-radius: 7px; background: var(--accent); color: #fff; padding: 8px 11px; font-weight: 700; }
+      .button.secondary { color: var(--accent); background: #fff; }
+      .button.quiet { color: var(--ink); border-color: var(--line); background: #fff; }
+      .button.danger { color: var(--danger); border-color: #f2b8b5; background: #fff; }
+      .button.small { font-size: .85rem; padding: 6px 8px; }
+      .action-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+      .pill { display: inline-block; border-radius: 999px; padding: 3px 8px; font-size: .78rem; font-weight: 700; background: var(--accent-soft); color: var(--accent); }
+      .pill.good { background: #e6f7f0; color: var(--good); }
+      .pill.warn { background: #fff3dc; color: var(--warn); }
+      .pill.recording { background: #ffe9e8; color: var(--danger); }
+      .divider { height: 1px; background: var(--line); margin: 14px 0; }
+      .key { color: var(--muted); font-size: .78rem; }
+      .state-panel { margin-top: 22px; font-size: .84rem; }
+      .state-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 8px; }
+      .state-grid div { background: #f7f9fd; padding: 9px; border-radius: 7px; }
+      .state-grid strong { display: block; margin-top: 2px; color: var(--ink); }
+      .switcher { position: fixed; z-index: 9; bottom: 18px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; padding: 9px; border: 1px solid #b7c3de; border-radius: 999px; background: #152344; color: #fff; box-shadow: 0 10px 30px rgba(6, 20, 55, .3); }
+      .switcher button { width: 34px; height: 34px; border: 0; border-radius: 50%; background: #fff; color: #152344; font-size: 1.2rem; }
+      .switcher strong { min-width: 170px; font-size: .85rem; text-align: center; }
+
+      /* Variant A: a guided sequence. */
+      .guided { display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 18px; }
+      .step-list { list-style: none; padding: 0; margin: 0; }
+      .step-list button { width: 100%; display: flex; align-items: center; gap: 10px; text-align: left; border: 0; border-radius: 7px; background: transparent; padding: 10px; color: var(--ink); }
+      .step-list button.active { background: var(--accent-soft); color: var(--accent); font-weight: 800; }
+      .step-list button.complete .step-number { background: var(--good); color: #fff; }
+      .step-number { display: grid; place-items: center; width: 24px; height: 24px; flex: 0 0 auto; border: 1px solid var(--line); border-radius: 50%; color: var(--muted); font-size: .77rem; }
+      .step-body { min-height: 360px; }
+      .stage-name { color: var(--accent); font-weight: 800; }
+
+      /* Variant B: a recording desk. */
+      .desk { display: grid; grid-template-columns: 225px minmax(300px, 1fr); gap: 18px; align-items: start; }
+      .chapter-item { padding: 11px 4px; border-bottom: 1px solid var(--line); }
+      .chapter-item.active { color: var(--accent); font-weight: 800; }
+      .teleprompter { min-height: 430px; background: #182033; color: #f6f8ff; border-radius: 12px; padding: clamp(24px, 6vw, 80px); box-shadow: inset 0 0 0 1px #34405b; }
+      .teleprompter .chapter { color: #a9c1ff; font-size: .82rem; letter-spacing: .08em; text-transform: uppercase; }
+      .teleprompter .copy { max-width: 680px; font-family: Georgia, serif; font-size: clamp(1.2rem, 2.4vw, 2rem); line-height: 1.65; }
+      .transport { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 9px; margin-top: 18px; }
+      .transport .button { min-width: 90px; }
+      .saved-take { margin: 12px 0 0; color: var(--good); font-size: .85rem; font-weight: 700; text-align: center; }
+      .desk-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+      .review-screen { min-height: 430px; }
+      .take-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--line); }
+      .take-row.selected { background: #f0f4ff; margin: 0 -7px; padding: 9px 7px; border-radius: 6px; }
+
+      /* Variant C: a review queue. */
+      .queue-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 18px; }
+      .lane-grid { display: grid; grid-template-columns: repeat(4, minmax(180px, 1fr)); gap: 12px; overflow-x: auto; }
+      .lane { background: #edf1f8; border-radius: 10px; padding: 10px; min-height: 355px; }
+      .lane h3 { margin: 2px 0 10px; }
+      .work-item { width: 100%; text-align: left; border: 1px solid var(--line); border-radius: 8px; padding: 11px; background: #fff; margin-bottom: 8px; color: var(--ink); }
+      .work-item.active { outline: 3px solid #bcd0ff; border-color: var(--accent); }
+      .work-item strong { display: block; margin-bottom: 4px; }
+      .review-control { position: sticky; top: 18px; }
+      .meter { height: 8px; margin: 8px 0; border-radius: 99px; background: #dbe3f0; overflow: hidden; }
+      .meter span { display: block; height: 100%; width: 72%; background: var(--good); }
+
+      @media (max-width: 880px) {
+        .guided, .desk, .queue-layout { grid-template-columns: 1fr; }
+        .desk .teleprompter { order: -1; }
+        .review-control { position: static; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <div class="eyebrow">Prototype only — not product code</div>
+      <h1>Narrator Recording Workflow</h1>
+      <p class="lede">Three different models for one local Project. Use the buttons to test the flow. The state exists only in this page.</p>
+      <div class="notice">This prototype does not open an EPUB file, use a microphone, record a Take, trim audio, or make an export.</div>
+      <section id="prototype" aria-live="polite"></section>
+      <section class="card state-panel" aria-label="Prototype state">
+        <h2>Test state</h2>
+        <div id="state"></div>
+      </section>
+    </main>
+    <nav class="switcher" aria-label="Prototype layout selector">
+      <button id="previous-variant" aria-label="Previous layout">←</button>
+      <strong id="variant-name"></strong>
+      <button id="next-variant" aria-label="Next layout">→</button>
+    </nav>
+
+    <script>
+      // PROTOTYPE: Three layouts for the Narrator workflow, switchable with ?variant=.
+      const variants = [
+        { key: 'A', name: 'Guided sequence' },
+        { key: 'B', name: 'Recording desk' },
+        { key: 'C', name: 'Review queue' },
+      ];
+
+      const stageOrder = ['Create Project', 'Import EPUB', 'Test microphone', 'Record', 'Review', 'Export'];
+      const model = {
+        stage: 0,
+        project: false,
+        epub: false,
+        microphone: false,
+        recordState: 'not started',
+        takes: [],
+        selectedTake: null,
+        trim: false,
+        segment: 1,
+        deskView: 'reading',
+        saveStatus: '',
+        notice: 'Create a Project to start the test.',
+      };
+
+      const button = (label, action, options = {}) => {
+        const kind = options.kind ? ` ${options.kind}` : '';
+        return `<button class="button${kind}" data-action="${action}" ${options.disabled ? 'disabled' : ''}>${label}</button>`;
+      };
+
+      const escape = (value) => String(value).replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
+
+      function currentVariant() {
+        const key = new URLSearchParams(location.search).get('variant') || 'A';
+        return variants.find((variant) => variant.key === key) || variants[0];
+      }
+
+      function isComplete(index) {
+        return [model.project, model.epub, model.microphone, model.takes.length > 0, model.selectedTake !== null && model.trim, model.canExport][index];
+      }
+
+      function canRecord() { return model.project && model.epub && model.microphone; }
+      function canReview() { return model.takes.length > 0; }
+      function canExport() { return canReview() && model.selectedTake !== null && model.trim; }
+
+      Object.defineProperty(model, 'canExport', { get: canExport });
+
+      function recordControls() {
+        if (model.recordState === 'recording') {
+          return `<div class="action-row">${button('Pause', 'pause-recording', { kind: 'secondary' })}${button('Stop', 'stop-recording', { kind: 'danger' })}</div>`;
+        }
+        if (model.recordState === 'paused') {
+          return `<div class="action-row">${button('Resume', 'resume-recording')}${button('Stop', 'stop-recording', { kind: 'danger' })}</div>`;
+        }
+        return `<div class="action-row">${button('Record', 'start-recording', { disabled: !canRecord() })}</div>`;
+      }
+
+      function takeList() {
+        if (model.takes.length === 0) return '<p class="muted">No Take exists. Record a Take first.</p>';
+        return model.takes.map((take, index) => `
+          <div class="take-row ${model.selectedTake === index ? 'selected' : ''}">
+            <span><strong>${escape(take)}</strong><br /><span class="key">Segment ${model.segment} · 00:00:12 test length</span></span>
+            ${button(model.selectedTake === index ? 'Selected' : 'Select', `select-take:${index}`, { kind: 'small secondary' })}
+          </div>`).join('');
+      }
+
+      function reviewControls() {
+        return `
+          <div class="action-row">
+            ${button('Play selected Take', 'play-take', { kind: 'secondary', disabled: model.selectedTake === null })}
+            ${button(model.trim ? 'Trim set: 00:01–00:11' : 'Set test Trim', 'set-trim', { kind: 'secondary', disabled: model.selectedTake === null })}
+            ${button('Export test', 'export', { disabled: !canExport() })}
+          </div>`;
+      }
+
+      function renderGuided() {
+        const stageDetails = [
+          ['Create Project', 'Name the local Project. Then select one EPUB file.', button('Create Project', 'create-project', { disabled: model.project })],
+          ['Import EPUB', 'Check the EPUB file and create its ordered Narration Segments.', button('Import test EPUB', 'import-epub', { disabled: !model.project || model.epub })],
+          ['Test microphone', 'Select the microphone. Record and play a short test before recording.', button('Run 3-second test', 'test-microphone', { disabled: !model.epub || model.microphone })],
+          ['Record', 'Record one Narration Segment. A new Take does not replace an earlier Take.', recordControls()],
+          ['Review', 'Select the Take to use. Play it, then set a non-destructive Trim.', `${takeList()}${reviewControls()}`],
+          ['Export', 'Create the ordered MP3 files after every Narration Segment has a selected Take.', button('Export test', 'export', { disabled: !canExport() })],
+        ];
+        const [name, detail, controls] = stageDetails[model.stage];
+        return `
+          <div class="guided">
+            <aside class="card"><h2>Project path</h2><ol class="step-list">${stageOrder.map((stage, index) => `
+              <li><button data-stage="${index}" class="${model.stage === index ? 'active' : ''} ${isComplete(index) ? 'complete' : ''}"><span class="step-number">${isComplete(index) ? '✓' : index + 1}</span>${stage}</button></li>`).join('')}</ol></aside>
+            <section class="card step-body"><span class="stage-name">Step ${model.stage + 1} of ${stageOrder.length}</span><h2>${name}</h2><p class="muted">${detail}</p><div class="divider"></div><p><span class="pill ${isComplete(model.stage) ? 'good' : 'warn'}">${isComplete(model.stage) ? 'Complete' : 'Needs action'}</span></p>${controls}</section>
+          </div>`;
+      }
+
+      function renderDeskReview() {
+        return `<section class="card review-screen"><h2>Recordings</h2><p class="muted">Select a saved Take only when you want to listen or set its Trim.</p>${takeList()}<div class="divider"></div>${reviewControls()}<div class="action-row">${button('Back to reading', 'back-to-reading', { kind: 'quiet' })}</div></section>`;
+      }
+
+      function renderDesk() {
+        return `
+          <div class="desk">
+            <aside class="card"><h2>Project setup</h2>
+              <div class="chapter-item ${model.project ? 'active' : ''}">1. ${model.project ? 'Project created' : 'Create Project'}</div>
+              <div class="chapter-item ${model.epub ? 'active' : ''}">2. ${model.epub ? 'EPUB imported' : 'Import EPUB'}</div>
+              <div class="chapter-item ${model.microphone ? 'active' : ''}">3. ${model.microphone ? 'Microphone tested' : 'Test microphone'}</div>
+              <div class="action-row">${button('Create Project', 'create-project', { kind: 'small', disabled: model.project })}${button('Import EPUB', 'import-epub', { kind: 'small secondary', disabled: !model.project || model.epub })}${button('Test microphone', 'test-microphone', { kind: 'small secondary', disabled: !model.epub || model.microphone })}</div>
+              <div class="divider"></div><h3>Segments</h3><div class="chapter-item ${model.segment === 1 ? 'active' : ''}">Chapter 1 · Segment 1</div><div class="chapter-item ${model.segment === 2 ? 'active' : ''}">Chapter 1 · Segment 2</div><div class="chapter-item ${model.segment === 3 ? 'active' : ''}">Chapter 2 · Segment 1</div>
+            </aside>
+            <section><div class="desk-toolbar"><span class="pill ${model.microphone ? 'good' : 'warn'}">${model.microphone ? 'Microphone ready' : 'Microphone not tested'}</span>${button(`Recordings (${model.takes.length})`, 'open-review', { kind: 'quiet small', disabled: model.takes.length === 0 })}</div>${model.deskView === 'review' ? renderDeskReview() : `<div class="teleprompter"><div class="chapter">Chapter ${model.segment === 3 ? '2' : '1'} · Narration Segment ${model.segment}</div><p class="copy">The text stays still until the Narrator moves it. Recording and text position are separate actions.</p><p class="copy">The Narrator can make another Take without loss of the earlier Take.</p></div><div class="transport">${button('Previous text', 'previous-segment', { kind: 'quiet' })}${recordControls()}${button('Next text', 'next-segment', { kind: 'quiet' })}</div>${model.saveStatus ? `<p class="saved-take">${escape(model.saveStatus)}</p>` : ''}`}</section>
+          </div>`;
+      }
+
+      function renderQueue() {
+        const column = (title, items) => `<section class="lane"><h3>${title}</h3>${items}</section>`;
+        const item = (title, detail, action, active) => `<button class="work-item ${active ? 'active' : ''}" data-action="${action || ''}" ${action ? '' : 'disabled'}><strong>${title}</strong><span class="key">${detail}</span></button>`;
+        const draft = model.epub ? item('Chapter 1, Segment 1', 'Ready for a Take', 'focus-record', model.stage === 3) : item('Import EPUB first', 'No Narration Segments yet', '', false);
+        const recorded = model.takes.length ? model.takes.map((take, index) => item(take, `Segment ${model.segment} · ${model.selectedTake === index ? 'Selected' : 'Select for review'}`, `select-take:${index}`, model.selectedTake === index)).join('') : item('No Takes', 'Record a Take from the review control', '', false);
+        const checked = model.trim ? item('Selected Take', 'Trim checked · ready for export', 'export', false) : item('No checked Take', 'Play and set a Trim', 'focus-review', false);
+        const exported = canExport() ? item('Audiobook export', 'MP3 profile check is ready', 'export', false) : item('Export is blocked', 'Select and trim one Take', '', false);
+        return `
+          <div class="queue-layout"><section class="card"><h2>Work queue</h2><p class="muted">This model makes the work state clear. The Narrator selects a work item, then uses the control at right.</p><div class="lane-grid">${column('Ready', draft)}${column('Recorded', recorded)}${column('Checked', checked)}${column('Export', exported)}</div></section>
+            <aside class="card review-control"><h2>Current action</h2><p><span class="pill ${model.recordState === 'recording' ? 'recording' : model.microphone ? 'good' : 'warn'}">${escape(model.recordState)}</span></p><p class="key">Chapter ${model.segment === 3 ? '2' : '1'} · Segment ${model.segment}</p><h3>Input test</h3><div class="meter"><span style="width:${model.microphone ? '72' : '0'}%"></span></div><p class="key">${model.microphone ? 'Test complete: peak level shown' : 'Run a microphone test before recording.'}</p><div class="divider"></div><h3>Record</h3>${recordControls()}<div class="divider"></div><h3>Review</h3>${reviewControls()}<div class="divider"></div><h3>Move text</h3><div class="action-row">${button('Previous', 'previous-segment', { kind: 'quiet small' })}${button('Next', 'next-segment', { kind: 'quiet small' })}</div></aside>
+          </div>`;
+      }
+
+      function renderState() {
+        const values = [
+          ['Project', model.project ? 'Created' : 'Not created'],
+          ['EPUB', model.epub ? 'Imported' : 'Not imported'],
+          ['Microphone', model.microphone ? 'Tested' : 'Not tested'],
+          ['Recording', model.recordState],
+          ['Takes', model.takes.length],
+          ['Selected Take', model.selectedTake === null ? 'None' : model.takes[model.selectedTake]],
+          ['Trim', model.trim ? '00:01–00:11' : 'Not set'],
+          ['Export', canExport() ? 'Ready' : 'Blocked'],
+          ['Last action', model.notice],
+        ];
+        document.getElementById('state').innerHTML = `<div class="state-grid">${values.map(([key, value]) => `<div><span class="key">${escape(key)}</span><strong>${escape(value)}</strong></div>`).join('')}</div>`;
+      }
+
+      function render() {
+        const variant = currentVariant();
+        document.getElementById('variant-name').textContent = `${variant.key} — ${variant.name}`;
+        const views = { A: renderGuided, B: renderDesk, C: renderQueue };
+        document.getElementById('prototype').innerHTML = views[variant.key]();
+        renderState();
+      }
+
+      function setStage(stage) { model.stage = stage; model.notice = `Viewed ${stageOrder[stage]}.`; }
+      function act(action) {
+        const [name, data] = action.split(':');
+        if (name === 'create-project') { model.project = true; model.stage = 1; model.notice = 'Project created. Import an EPUB file next.'; }
+        if (name === 'import-epub') { model.epub = true; model.stage = 2; model.notice = 'Test EPUB imported. Test the microphone next.'; }
+        if (name === 'test-microphone') { model.microphone = true; model.stage = 3; model.notice = 'Three-second microphone test completed.'; }
+        if (name === 'start-recording') { model.recordState = 'recording'; model.stage = 3; model.notice = 'Test Take is recording.'; }
+        if (name === 'pause-recording') { model.recordState = 'paused'; model.notice = 'Test Take is paused.'; }
+        if (name === 'resume-recording') { model.recordState = 'recording'; model.notice = 'Test Take resumed.'; }
+        if (name === 'stop-recording') { model.takes.push(`Take ${model.takes.length + 1}`); model.selectedTake = model.takes.length - 1; model.recordState = 'stopped'; model.stage = 3; model.saveStatus = 'Recording saved.'; model.notice = 'New Take saved. The Narrator can keep reading.'; window.setTimeout(() => { model.saveStatus = ''; render(); }, 3500); }
+        if (name === 'select-take') { model.selectedTake = Number(data); model.trim = false; model.stage = 4; model.notice = `${model.takes[model.selectedTake]} is selected.`; }
+        if (name === 'play-take') { model.notice = `${model.takes[model.selectedTake]} is playing in this test model.`; }
+        if (name === 'set-trim') { model.trim = true; model.stage = 4; model.notice = 'Test Trim set. The source Take is unchanged.'; }
+        if (name === 'export') { model.stage = 5; model.notice = 'Export test is ready. This prototype does not create a file.'; }
+        if (name === 'previous-segment') { model.segment = Math.max(1, model.segment - 1); model.notice = `Moved to Narration Segment ${model.segment}.`; }
+        if (name === 'next-segment') { model.segment = Math.min(3, model.segment + 1); model.notice = `Moved to Narration Segment ${model.segment}.`; }
+        if (name === 'focus-record') { model.stage = 3; model.notice = 'Recording work selected.'; }
+        if (name === 'focus-review') { model.stage = 4; model.notice = 'Review work selected.'; }
+        if (name === 'open-review') { model.deskView = 'review'; model.stage = 4; model.notice = 'Recordings opened.'; }
+        if (name === 'back-to-reading') { model.deskView = 'reading'; model.stage = 3; model.notice = 'Returned to the Teleprompter.'; }
+        render();
+      }
+
+      function moveVariant(direction) {
+        const current = currentVariant();
+        const index = variants.findIndex((variant) => variant.key === current.key);
+        const next = variants[(index + direction + variants.length) % variants.length];
+        const query = new URLSearchParams(location.search);
+        query.set('variant', next.key);
+        history.replaceState({}, '', `${location.pathname}?${query}`);
+        render();
+      }
+
+      document.addEventListener('click', (event) => {
+        const actionTarget = event.target.closest('[data-action]');
+        if (actionTarget && actionTarget.dataset.action) act(actionTarget.dataset.action);
+        const stageTarget = event.target.closest('[data-stage]');
+        if (stageTarget) { setStage(Number(stageTarget.dataset.stage)); render(); }
+      });
+      document.getElementById('previous-variant').addEventListener('click', () => moveVariant(-1));
+      document.getElementById('next-variant').addEventListener('click', () => moveVariant(1));
+      document.addEventListener('keydown', (event) => {
+        if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName) || document.activeElement.isContentEditable) return;
+        if (event.key === 'ArrowLeft') moveVariant(-1);
+        if (event.key === 'ArrowRight') moveVariant(1);
+      });
+      render();
+    </script>
+  </body>
+</html>
