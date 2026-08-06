@@ -1,0 +1,31 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Native Audio WAV Prototype",
+  "version": "0.1.0",
+  "identifier": "com.jonbaldie.ebook-narrator.native-audio-prototype",
+  "build": {
+    "frontendDist": "../web"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "title": "PROTOTYPE — Native Audio and WAV Project Format",
+        "width": 1180,
+        "height": 820,
+        "resizable": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [],
+    "macOS": {
+      "infoPlist": "Info.plist"
+    }
+  }
+}

@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Native Audio WAV Prototype</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header>
+      <p class="warning">PROTOTYPE — Test data can be deleted.</p>
+      <h1>Native Audio and WAV Project Format</h1>
+      <p>Use one numbered section at a time. The full state is shown on the right.</p>
+    </header>
+    <main>
+      <section class="tasks">
+        <article>
+          <h2>1. EPUB and Teleprompter</h2>
+          <div class="row"><button id="create-fixture">Create fixture EPUB</button><button id="import-fixture">Import fixture EPUB</button></div>
+          <label>Other local EPUB path <input id="epub-path" type="text" /></label>
+          <button id="import-path" class="secondary">Import this path</button>
+          <div class="teleprompter" id="teleprompter">Import an EPUB.</div>
+          <div class="row"><button id="previous" class="secondary">Previous</button><button id="next">Next</button></div>
+        </article>
+
+        <article>
+          <h2>2. Devices and recording</h2>
+          <label>Input device <select id="input-device"></select></label>
+          <label>Output device <select id="output-device"></select></label>
+          <button id="select-devices">Use these devices</button>
+          <div class="row"><button id="three-second">Run 3-second test</button><button id="start">Start Take</button><button id="pause" class="secondary">Pause</button><button id="resume" class="secondary">Continue</button><button id="stop" class="danger">Stop</button></div>
+          <p id="recording-state">No Take is recording.</p>
+        </article>
+
+        <article>
+          <h2>3. Take, Trim, and playback</h2>
+          <label>Selected Take <select id="take"></select></label>
+          <button id="select-take" class="secondary">Select Take</button>
+          <div class="row"><label>Start frame <input id="trim-start" type="number" min="0" value="0" /></label><label>End frame <input id="trim-end" type="number" min="1" /></label></div>
+          <div class="row"><button id="apply-trim">Apply Trim</button><button id="play">Play selected Take</button></div>
+        </article>
+
+        <article>
+          <h2>4. Export</h2>
+          <button id="export">Export selected Take</button>
+          <pre id="export-result">No export result.</pre>
+        </article>
+
+        <article>
+          <h2>5. Record a direct observation</h2>
+          <label>Test <select id="observation-test">
+            <option>Local EPUB import</option><option>Manual Teleprompter movement</option><option>Input and output device list</option><option>Three-second microphone test</option><option>60-minute Take</option><option>Pause and continue</option><option>Playback</option><option>Take selection</option><option>Non-destructive Trim</option><option>Input-device loss</option><option>Input-device change</option><option>Microphone permission refusal</option><option>Narration Application restart</option><option>ACX-compatible MP3 export</option>
+          </select></label>
+          <label>Result <select id="observation-result"><option>Pass</option><option>Fail</option><option>Blocked</option></select></label>
+          <label>Observation <textarea id="observation-note" rows="3"></textarea></label>
+          <button id="record-observation">Record observation</button>
+        </article>
+      </section>
+
+      <aside>
+        <h2>Complete prototype state</h2>
+        <p id="message" role="status">Starting…</p>
+        <pre id="state"></pre>
+      </aside>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>
