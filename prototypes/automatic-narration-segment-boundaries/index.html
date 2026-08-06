@@ -1,0 +1,1019 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Prototype: Automatic Narration Segment Boundaries</title>
+    <style>
+      :root {
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+        color: #35403b;
+        background: #f7f2eb;
+        --ink: #35403b;
+        --muted: #69756f;
+        --line: rgba(91, 105, 98, 0.16);
+        --paper: rgba(255, 255, 255, 0.82);
+        --accent: #456f5f;
+        --accent-soft: #dcebe3;
+        --warn: #8a5a2b;
+        --warn-soft: #f3e6d4;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-width: 320px; }
+      button, select { font: inherit; }
+      button { cursor: pointer; }
+      button:disabled { cursor: not-allowed; opacity: 0.45; }
+      h1, h2, h3, p { margin-top: 0; }
+      .flag {
+        position: fixed; z-index: 30; top: 12px; right: 14px;
+        max-width: min(280px, calc(100vw - 28px));
+        padding: 8px 11px; border-radius: 12px;
+        background: rgba(35, 43, 40, 0.9); color: #fff;
+        font-size: 0.68rem; line-height: 1.35;
+      }
+      .flag strong { display: block; letter-spacing: 0.08em; text-transform: uppercase; }
+      .flag span { color: #d8e2dc; }
+      .page {
+        max-width: 1100px; margin: 0 auto;
+        padding: 48px 24px 80px;
+      }
+      .hero {
+        margin-bottom: 28px;
+        padding: 28px 30px;
+        border-radius: 24px;
+        background: linear-gradient(145deg, #fbf2e8, #eef4ed);
+        box-shadow: 0 12px 38px rgba(71, 78, 73, 0.06);
+      }
+      .label {
+        display: inline-block; margin-bottom: 12px;
+        padding: 6px 11px; border-radius: 999px;
+        background: rgba(255, 255, 255, 0.76);
+        color: #6a756f; font-size: 0.78rem; font-weight: 750;
+      }
+      h1 {
+        margin-bottom: 10px;
+        font-family: Georgia, serif;
+        font-size: clamp(1.8rem, 4vw, 2.6rem);
+        font-weight: 500; line-height: 1.15;
+      }
+      .intro { max-width: 720px; color: var(--muted); line-height: 1.55; margin-bottom: 0; }
+      .grid {
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 18px;
+        align-items: start;
+      }
+      @media (max-width: 900px) {
+        .grid { grid-template-columns: 1fr; }
+      }
+      .panel {
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        padding: 18px 18px 16px;
+        box-shadow: 0 10px 28px rgba(71, 78, 73, 0.05);
+      }
+      .panel h2 {
+        margin-bottom: 8px;
+        font-family: Georgia, serif;
+        font-size: 1.2rem;
+        font-weight: 500;
+      }
+      .panel .hint { color: var(--muted); font-size: 0.92rem; line-height: 1.45; margin-bottom: 14px; }
+      .toolbar {
+        display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+        margin-bottom: 14px;
+      }
+      .toolbar label { color: var(--muted); font-size: 0.86rem; font-weight: 650; }
+      select, .field {
+        border: 1px solid #c5d0c9;
+        border-radius: 12px;
+        background: #fff;
+        color: var(--ink);
+        padding: 9px 12px;
+      }
+      .primary {
+        border: 0; border-radius: 999px;
+        background: var(--accent); color: #fff;
+        padding: 10px 16px; font-weight: 750;
+      }
+      .secondary {
+        border: 1px solid #74837c; border-radius: 999px;
+        background: transparent; color: #56645e;
+        padding: 9px 14px; font-weight: 700;
+      }
+      .quiet {
+        border: 0; border-radius: 999px;
+        background: transparent; color: #66726c;
+        padding: 8px 12px; font-weight: 650;
+      }
+      .quiet:hover, .secondary:hover { background: rgba(63, 77, 70, 0.07); }
+      .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+      .chip {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 6px 10px; border-radius: 999px;
+        background: #edf2ee; color: #4d5b54;
+        font-size: 0.8rem; font-weight: 700;
+      }
+      .chip.warn { background: var(--warn-soft); color: var(--warn); }
+      .chip.ok { background: var(--accent-soft); color: #277154; }
+      .segments { display: grid; gap: 10px; }
+      .segment {
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: #fff;
+        padding: 14px 14px 12px;
+      }
+      .segment.selected {
+        border-color: rgba(69, 111, 95, 0.45);
+        box-shadow: 0 0 0 3px rgba(69, 111, 95, 0.12);
+      }
+      .segment-head {
+        display: flex; justify-content: space-between; gap: 12px;
+        align-items: flex-start; margin-bottom: 8px;
+      }
+      .segment-title {
+        font-weight: 800; font-size: 0.95rem; line-height: 1.3;
+      }
+      .segment-meta {
+        color: var(--muted); font-size: 0.78rem; white-space: nowrap;
+      }
+      .segment-body {
+        font-family: Georgia, serif;
+        font-size: 0.98rem;
+        line-height: 1.55;
+        color: #2f3834;
+        margin-bottom: 10px;
+      }
+      .segment-body .para + .para { margin-top: 0.55em; }
+      .segment-actions {
+        display: flex; flex-wrap: wrap; gap: 8px;
+      }
+      .mini {
+        border: 1px solid #c5d0c9; border-radius: 999px;
+        background: #f7faf8; color: #45554d;
+        padding: 6px 11px; font-size: 0.8rem; font-weight: 700;
+      }
+      .mini:hover { background: #eef4ef; }
+      .split-points {
+        display: flex; flex-wrap: wrap; gap: 6px;
+        margin-top: 8px;
+      }
+      .split-points .mini { background: #fff7ee; border-color: #e2c7a4; color: var(--warn); }
+      .state-box {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 0.78rem;
+        line-height: 1.45;
+        white-space: pre-wrap;
+        background: #24302b;
+        color: #e7f0ea;
+        border-radius: 14px;
+        padding: 14px;
+        max-height: 340px;
+        overflow: auto;
+      }
+      .changed {
+        margin: 0 0 12px;
+        padding: 10px 12px;
+        border-radius: 12px;
+        background: var(--accent-soft);
+        color: #1f5a43;
+        font-size: 0.88rem;
+        font-weight: 700;
+      }
+      .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+      .tab {
+        border: 1px solid #c5d0c9; border-radius: 999px;
+        background: #fff; color: #56645e;
+        padding: 8px 12px; font-size: 0.84rem; font-weight: 750;
+      }
+      .tab.active {
+        background: var(--accent); border-color: var(--accent); color: #fff;
+      }
+      .scenario {
+        border: 1px dashed #c5d0c9;
+        border-radius: 14px;
+        padding: 14px;
+        background: rgba(255,255,255,0.55);
+        margin-bottom: 12px;
+      }
+      .scenario p { margin-bottom: 10px; color: var(--muted); font-size: 0.92rem; line-height: 1.45; }
+      .steps { display: flex; flex-wrap: wrap; gap: 8px; }
+      .step {
+        border: 1px solid #b9c7bf; border-radius: 12px;
+        background: #fff; color: var(--ink);
+        padding: 8px 12px; font-size: 0.84rem; font-weight: 700;
+      }
+      .step.done { opacity: 0.45; text-decoration: line-through; }
+      .step.current {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(69, 111, 95, 0.12);
+      }
+      .rules {
+        display: grid; gap: 8px;
+        margin: 0; padding: 0; list-style: none;
+      }
+      .rules li {
+        padding: 10px 12px;
+        border-radius: 12px;
+        background: #edf2ee;
+        color: #45554d;
+        font-size: 0.9rem;
+        line-height: 1.4;
+      }
+      .proposal {
+        margin-top: 18px;
+        padding: 18px 20px;
+        border-radius: 20px;
+        background: #24302b;
+        color: #e7f0ea;
+      }
+      .proposal h2 {
+        color: #fff;
+        font-family: Georgia, serif;
+        font-weight: 500;
+        margin-bottom: 10px;
+      }
+      .proposal ol { margin: 0; padding-left: 1.2em; line-height: 1.55; }
+      .proposal li + li { margin-top: 0.45em; }
+      .proposal strong { color: #fff; }
+    </style>
+  </head>
+  <body>
+    <div class="flag">
+      <strong>Prototype</strong>
+      <span>Throwaway demo for automatic Narration Segment boundaries. Not production code.</span>
+    </div>
+    <div class="page">
+      <header class="hero">
+        <div class="label">Logic prototype · Issue 11</div>
+        <h1>Automatic Narration Segment boundaries</h1>
+        <p class="intro">
+          Question: how should the Narration Application create Narration Segments from
+          EPUB chapters, headings, paragraphs, and text length — and when may the
+          Narrator accept, join, or split a boundary without making import feel
+          technical?
+        </p>
+      </header>
+
+      <div class="grid">
+        <section class="panel">
+          <h2>Book parts after import</h2>
+          <p class="hint">
+            Pick a sample book. The pure segmentation rules run once. Then try join,
+            split, and accept. Watch whether the parts feel right to record.
+          </p>
+
+          <div class="toolbar">
+            <label for="book">Sample book</label>
+            <select id="book"></select>
+            <button class="secondary" id="reset-book" type="button">Reset to automatic parts</button>
+          </div>
+
+          <div class="chips" id="summary"></div>
+          <div id="changed"></div>
+          <div class="segments" id="segments"></div>
+        </section>
+
+        <aside>
+          <section class="panel" style="margin-bottom: 18px;">
+            <h2>Proposed automatic rules</h2>
+            <p class="hint">These rules are the thing under test. Change them only if a walkthrough feels wrong.</p>
+            <ul class="rules">
+              <li>A new chapter always starts a new Narration Segment.</li>
+              <li>A major heading inside a chapter always starts a new Narration Segment.</li>
+              <li>Paragraphs pack into the current part until the next paragraph would push the part past about 180 words.</li>
+              <li>A paragraph never splits in the middle.</li>
+              <li>A leftover shorter than about 40 words joins the previous part in the same section.</li>
+              <li>Opening credits, chapters, and closing credits stay separate sections.</li>
+            </ul>
+          </section>
+
+          <section class="panel" style="margin-bottom: 18px;">
+            <h2>Guided walkthroughs</h2>
+            <p class="hint">Each walkthrough resets the selected book, then asks you to press the steps in order.</p>
+            <div class="tabs" id="tabs"></div>
+            <div class="scenario" id="scenario"></div>
+          </section>
+
+          <section class="panel">
+            <h2>Current state</h2>
+            <p class="hint">Full relevant state after every action.</p>
+            <div class="state-box" id="state"></div>
+          </section>
+        </aside>
+      </div>
+
+      <section class="proposal">
+        <h2>Proposed product decision to react to</h2>
+        <ol>
+          <li><strong>Import stays quiet.</strong> After the Narrator chooses an EPUB file, the Narration Application creates Narration Segments automatically and shows only “Your book is ready.” No boundary editor on the happy path.</li>
+          <li><strong>Accept is the default.</strong> Opening the Project accepts the automatic parts. The Narrator does not confirm each boundary.</li>
+          <li><strong>Join and split stay secondary.</strong> During recording or review, the current part offers “Combine with next part” and, when a part holds more than one paragraph, “Split after this paragraph.”</li>
+          <li><strong>No technical language.</strong> Screens say “part,” not “segment,” “boundary,” “heading level,” or word counts as requirements. Word counts may appear as quiet help only.</li>
+          <li><strong>Export still follows chapters.</strong> Platform Export files follow chapter or section structure from the book, not every small Narration Segment. Small parts only shape recording work.</li>
+        </ol>
+      </section>
+    </div>
+
+    <script>
+      // ============================================================
+      // PURE MODULE — segmentation + boundary edits
+      // Liftable later; no DOM here.
+      // ============================================================
+      const SEGMENTATION = (() => {
+        const MAX_WORDS = 180;
+        const MIN_WORDS = 40;
+
+        function words(text) {
+          return text.trim().split(/\s+/).filter(Boolean).length;
+        }
+
+        function preview(text, n = 140) {
+          const t = text.replace(/\s+/g, ' ').trim();
+          return t.length <= n ? t : t.slice(0, n - 1).trimEnd() + '…';
+        }
+
+        /** @typedef {{ id: string, kind: 'credits'|'chapter'|'closing', title: string, blocks: Array<{type:'heading'|'paragraph', text:string}> }} Section */
+        /** @typedef {{ id: string, sectionId: string, sectionKind: string, sectionTitle: string, heading: string|null, paragraphs: string[], wordCount: number }} Segment */
+
+        function segmentDocument(sections) {
+          /** @type {Segment[]} */
+          const segments = [];
+          let n = 0;
+
+          for (const section of sections) {
+            let current = null;
+
+            const pushCurrent = () => {
+              if (!current) return;
+              current.wordCount = current.paragraphs.reduce((sum, p) => sum + words(p), 0);
+              segments.push(current);
+              current = null;
+            };
+
+            const start = (heading) => {
+              n += 1;
+              current = {
+                id: `seg-${n}`,
+                sectionId: section.id,
+                sectionKind: section.kind,
+                sectionTitle: section.title,
+                heading: heading || null,
+                paragraphs: [],
+                wordCount: 0,
+              };
+            };
+
+            for (const block of section.blocks) {
+              if (block.type === 'heading') {
+                pushCurrent();
+                start(block.text);
+                continue;
+              }
+
+              // paragraph
+              if (!current) start(null);
+              const nextCount = current.paragraphs.reduce((s, p) => s + words(p), 0) + words(block.text);
+              if (current.paragraphs.length > 0 && nextCount > MAX_WORDS) {
+                pushCurrent();
+                start(null);
+              }
+              current.paragraphs.push(block.text);
+            }
+            pushCurrent();
+
+            // Join a short trailing leftover inside the same section.
+            const sectionSegs = segments.filter((s) => s.sectionId === section.id);
+            if (sectionSegs.length >= 2) {
+              const last = sectionSegs[sectionSegs.length - 1];
+              const prev = sectionSegs[sectionSegs.length - 2];
+              if (last.wordCount < MIN_WORDS && !last.heading) {
+                prev.paragraphs.push(...last.paragraphs);
+                prev.wordCount = prev.paragraphs.reduce((s, p) => s + words(p), 0);
+                const idx = segments.findIndex((s) => s.id === last.id);
+                segments.splice(idx, 1);
+              }
+            }
+          }
+
+          return segments.map(cloneSegment);
+        }
+
+        function cloneSegment(s) {
+          return {
+            ...s,
+            paragraphs: [...s.paragraphs],
+          };
+        }
+
+        function cloneSegments(list) {
+          return list.map(cloneSegment);
+        }
+
+        function recompute(seg) {
+          seg.wordCount = seg.paragraphs.reduce((s, p) => s + words(p), 0);
+          return seg;
+        }
+
+        function renumber(segments) {
+          return segments.map((s, i) => ({ ...cloneSegment(s), id: `seg-${i + 1}` }));
+        }
+
+        /** Join segment at index with the next segment when they share a section. */
+        function joinWithNext(segments, index) {
+          const list = cloneSegments(segments);
+          if (index < 0 || index >= list.length - 1) {
+            return { ok: false, reason: 'No next part to combine.', segments: list };
+          }
+          const a = list[index];
+          const b = list[index + 1];
+          if (a.sectionId !== b.sectionId) {
+            return {
+              ok: false,
+              reason: 'Parts from different chapters stay separate.',
+              segments: list,
+            };
+          }
+          a.paragraphs.push(...b.paragraphs);
+          if (!a.heading && b.heading) a.heading = b.heading;
+          recompute(a);
+          list.splice(index + 1, 1);
+          return { ok: true, reason: 'Combined with the next part.', segments: renumber(list) };
+        }
+
+        /**
+         * Split after paragraph `paraIndex` inside segment `index`.
+         * paraIndex is 0-based and must leave at least one paragraph on each side.
+         */
+        function splitAfterParagraph(segments, index, paraIndex) {
+          const list = cloneSegments(segments);
+          if (index < 0 || index >= list.length) {
+            return { ok: false, reason: 'Unknown part.', segments: list };
+          }
+          const seg = list[index];
+          if (paraIndex < 0 || paraIndex >= seg.paragraphs.length - 1) {
+            return {
+              ok: false,
+              reason: 'A part needs text on both sides of a split.',
+              segments: list,
+            };
+          }
+          const leftParas = seg.paragraphs.slice(0, paraIndex + 1);
+          const rightParas = seg.paragraphs.slice(paraIndex + 1);
+          const left = recompute({
+            ...seg,
+            paragraphs: leftParas,
+          });
+          const right = recompute({
+            id: 'temp',
+            sectionId: seg.sectionId,
+            sectionKind: seg.sectionKind,
+            sectionTitle: seg.sectionTitle,
+            heading: null,
+            paragraphs: rightParas,
+            wordCount: 0,
+          });
+          list.splice(index, 1, left, right);
+          return { ok: true, reason: 'Split into two parts.', segments: renumber(list) };
+        }
+
+        function acceptAll(segments) {
+          return {
+            ok: true,
+            reason: 'Accepted automatic parts. Ready to record.',
+            segments: cloneSegments(segments),
+            accepted: true,
+          };
+        }
+
+        function summarize(segments) {
+          const long = segments.filter((s) => s.wordCount > MAX_WORDS).length;
+          const short = segments.filter((s) => s.wordCount < MIN_WORDS).length;
+          const totalWords = segments.reduce((s, x) => s + x.wordCount, 0);
+          return {
+            partCount: segments.length,
+            totalWords,
+            longParts: long,
+            shortParts: short,
+            maxWords: MAX_WORDS,
+            minWords: MIN_WORDS,
+          };
+        }
+
+        return {
+          MAX_WORDS,
+          MIN_WORDS,
+          words,
+          preview,
+          segmentDocument,
+          joinWithNext,
+          splitAfterParagraph,
+          acceptAll,
+          summarize,
+          cloneSegments,
+        };
+      })();
+
+      // ============================================================
+      // SAMPLE BOOKS (EPUB-like structure, plain text only)
+      // ============================================================
+      const BOOKS = {
+        letter: {
+          id: 'letter',
+          title: 'The Letter Tomorrow',
+          blurb: 'Short novel chapters with plain paragraphs — the happy path.',
+          sections: [
+            {
+              id: 'open',
+              kind: 'credits',
+              title: 'Opening credits',
+              blocks: [
+                { type: 'paragraph', text: 'The Letter Tomorrow. Written by A. Narrator. Read by you.' },
+              ],
+            },
+            {
+              id: 'c1',
+              kind: 'chapter',
+              title: 'Chapter One',
+              blocks: [
+                { type: 'paragraph', text: 'The first morning of autumn arrived without ceremony. Mara opened the shop, set the kettle on, and found a letter beneath the door. The paper was dry despite the rain, and her name sat on the front in a hand she almost recognized.' },
+                { type: 'paragraph', text: 'She turned it over twice before she broke the seal. Inside was a single page and a date that had not happened yet. The kettle began to sing. Outside, a bicycle bell passed and faded.' },
+                { type: 'paragraph', text: 'By the time the tea had steeped, she had read the letter three times. Each reading left a different sentence glowing in her mind. None of them told her what to do first.' },
+                { type: 'paragraph', text: 'She pinned the page above the till, wiped the counter, and waited for the first customer. Waiting, she decided, could be a kind of answer.' },
+              ],
+            },
+            {
+              id: 'c2',
+              kind: 'chapter',
+              title: 'Chapter Two',
+              blocks: [
+                { type: 'paragraph', text: 'By noon the letter had changed three times. Each new sentence told her where not to go. The town map on the wall looked suddenly full of doors.' },
+                { type: 'paragraph', text: 'Mara locked the shop early and walked the long way home. She did not take the bridge. She did not take the lane behind the bakery. She took the path that smelled of wet leaves and old apples.' },
+                { type: 'paragraph', text: 'At her gate, a second envelope waited. This one had no name. She did not open it until morning.' },
+              ],
+            },
+            {
+              id: 'close',
+              kind: 'closing',
+              title: 'Closing credits',
+              blocks: [
+                { type: 'paragraph', text: 'The end. Thank you for listening.' },
+              ],
+            },
+          ],
+        },
+        guide: {
+          id: 'guide',
+          title: 'A Small Guide to Quiet Rooms',
+          blurb: 'One chapter with several major headings — tests heading splits.',
+          sections: [
+            {
+              id: 'open',
+              kind: 'credits',
+              title: 'Opening credits',
+              blocks: [
+                { type: 'paragraph', text: 'A Small Guide to Quiet Rooms. A practical handbook.' },
+              ],
+            },
+            {
+              id: 'c1',
+              kind: 'chapter',
+              title: 'Chapter One · Finding quiet',
+              blocks: [
+                { type: 'heading', text: 'Why quiet matters' },
+                { type: 'paragraph', text: 'Quiet is not the absence of sound. It is the presence of room to hear yourself think. Many people look for silence and settle for less noise. This guide aims a little higher.' },
+                { type: 'paragraph', text: 'You do not need a perfect room. You need a room that forgives a chair scrape and a distant bus.' },
+                { type: 'heading', text: 'Choose a corner' },
+                { type: 'paragraph', text: 'Start with the corner farthest from the street. Soft things help: a curtain, a rug, a full bookshelf. Hard floors bounce every word back at you.' },
+                { type: 'paragraph', text: 'If you can, sit with your back to a wall. The wall becomes a quiet ally. Windows can wait until you trust the room.' },
+                { type: 'heading', text: 'A three-minute test' },
+                { type: 'paragraph', text: 'Read one page aloud. Listen back. If you hear the room more than the words, move one soft object and try again. Stop when the words win.' },
+                { type: 'paragraph', text: 'Write nothing down yet. Your ear will remember better than a list.' },
+              ],
+            },
+            {
+              id: 'close',
+              kind: 'closing',
+              title: 'Closing credits',
+              blocks: [
+                { type: 'paragraph', text: 'End of the sample.' },
+              ],
+            },
+          ],
+        },
+        dense: {
+          id: 'dense',
+          title: 'The Long Paragraph Problem',
+          blurb: 'A chapter of long paragraphs — tests packing by length without mid-paragraph splits.',
+          sections: [
+            {
+              id: 'c1',
+              kind: 'chapter',
+              title: 'Chapter One',
+              blocks: [
+                { type: 'paragraph', text: 'In the years after the river changed course, the town learned to measure distance by memory instead of maps. Children still pointed to the dry bend and called it water. Older people corrected them gently, then stopped correcting them at all, because the story of the river had become more useful than the river itself. Markets opened later. Bells rang earlier. Nobody agreed on why.' },
+                { type: 'paragraph', text: 'Elena kept a shop of buttons and thread near the old ferry steps. She knew every regular by the repairs they needed before they spoke. A torn cuff meant winter work. A missing button near the throat meant a hurried morning. She did not ask for news. News arrived stitched into cloth.' },
+                { type: 'paragraph', text: 'One Thursday a stranger brought a coat with no damage she could find. He asked her to remove a single green thread from the inner seam and replace it with blue. He paid in coins from a city that no longer minted them. When he left, the bell above the door rang once and then refused to move, as if it had decided the visit was enough sound for the afternoon.' },
+                { type: 'paragraph', text: 'Elena swept the floor twice. She checked the till. She held the green thread to the window and saw no special color there, only the ordinary green of summer grass remembered in winter. Still, she labeled a small envelope and wrote: keep until asked. She placed it behind the counter where impulse could not reach it.' },
+                { type: 'paragraph', text: 'Night came early. The ferry steps held a thin frost. Across the dry bend, someone lit a lantern and walked the path the water used to take, step by careful step, as if depth might return without warning and require a person to remember how to float.' },
+              ],
+            },
+          ],
+        },
+        tiny: {
+          id: 'tiny',
+          title: 'Fragments',
+          blurb: 'Many tiny paragraphs — tests the short-leftover join rule.',
+          sections: [
+            {
+              id: 'c1',
+              kind: 'chapter',
+              title: 'Chapter One',
+              blocks: [
+                { type: 'paragraph', text: 'Rain.' },
+                { type: 'paragraph', text: 'Then wind.' },
+                { type: 'paragraph', text: 'Then the knock she had been waiting for since spring.' },
+                { type: 'paragraph', text: 'She did not open the door at once.' },
+                { type: 'paragraph', text: 'She put the kettle on.' },
+                { type: 'paragraph', text: 'She dried her hands.' },
+                { type: 'paragraph', text: 'Only then did she turn the latch and let the story in.' },
+              ],
+            },
+          ],
+        },
+      };
+
+      // ============================================================
+      // PAGE SHELL — throwaway UI over the pure module
+      // ============================================================
+      const SCENARIOS = [
+        {
+          id: 'happy',
+          title: '1 · Quiet import',
+          book: 'letter',
+          blurb: 'A normal short book. Watch automatic parts appear, then accept them with no join or split. This is the proposed happy path.',
+          steps: [
+            { label: 'Load short novel', run: (ctx) => ctx.loadBook('letter') },
+            { label: 'Accept all parts', run: (ctx) => ctx.accept() },
+          ],
+        },
+        {
+          id: 'headings',
+          title: '2 · Headings become parts',
+          book: 'guide',
+          blurb: 'A chapter with major headings. Confirm each heading starts a fresh part, then combine two short heading-parts if they feel too small to record alone.',
+          steps: [
+            { label: 'Load guide book', run: (ctx) => ctx.loadBook('guide') },
+            { label: 'Select part 3', run: (ctx) => ctx.select(2) },
+            { label: 'Combine with next part', run: (ctx) => ctx.join() },
+          ],
+        },
+        {
+          id: 'long',
+          title: '3 · Long paragraphs pack',
+          book: 'dense',
+          blurb: 'Long paragraphs should pack near the 180-word comfort line without ever splitting mid-paragraph. Split one packed part between paragraphs if it feels too long to record.',
+          steps: [
+            { label: 'Load dense chapter', run: (ctx) => ctx.loadBook('dense') },
+            { label: 'Select the longest part', run: (ctx) => ctx.selectLongest() },
+            { label: 'Split after first paragraph', run: (ctx) => ctx.split(0) },
+          ],
+        },
+        {
+          id: 'fragments',
+          title: '4 · Tiny lines join',
+          book: 'tiny',
+          blurb: 'Very short lines should not become dozens of tiny parts. Confirm the automatic join behavior, then try an illegal chapter-crossing combine on another book.',
+          steps: [
+            { label: 'Load fragments', run: (ctx) => ctx.loadBook('tiny') },
+            { label: 'Load short novel', run: (ctx) => ctx.loadBook('letter') },
+            { label: 'Select last chapter part', run: (ctx) => ctx.selectLastInFirstChapter() },
+            { label: 'Try combine across chapter', run: (ctx) => ctx.join() },
+          ],
+        },
+        {
+          id: 'secondary',
+          title: '5 · Fix later, not at import',
+          book: 'guide',
+          blurb: 'Proposed product rule: import does not demand a review. Accept first, then adjust one part as if you noticed a problem while recording.',
+          steps: [
+            { label: 'Load guide book', run: (ctx) => ctx.loadBook('guide') },
+            { label: 'Accept all parts', run: (ctx) => ctx.accept() },
+            { label: 'Select part 2', run: (ctx) => ctx.select(1) },
+            { label: 'Combine with next part', run: (ctx) => ctx.join() },
+          ],
+        },
+      ];
+
+      const app = {
+        bookId: 'letter',
+        segments: [],
+        selectedIndex: 0,
+        accepted: false,
+        lastMessage: 'Automatic parts created from the sample book.',
+        scenarioId: 'happy',
+        stepIndex: 0,
+      };
+
+      function loadBook(bookId) {
+        const book = BOOKS[bookId];
+        app.bookId = bookId;
+        app.segments = SEGMENTATION.segmentDocument(book.sections);
+        app.selectedIndex = 0;
+        app.accepted = false;
+        app.lastMessage = `Automatic parts created for “${book.title}”.`;
+      }
+
+      function select(index) {
+        if (index < 0 || index >= app.segments.length) {
+          app.lastMessage = 'That part is not available.';
+          return;
+        }
+        app.selectedIndex = index;
+        app.lastMessage = `Selected part ${index + 1}.`;
+      }
+
+      function join() {
+        const result = SEGMENTATION.joinWithNext(app.segments, app.selectedIndex);
+        app.segments = result.segments;
+        app.lastMessage = result.reason;
+        if (result.ok) {
+          app.accepted = false;
+          if (app.selectedIndex >= app.segments.length) {
+            app.selectedIndex = app.segments.length - 1;
+          }
+        }
+      }
+
+      function split(paraIndex) {
+        const result = SEGMENTATION.splitAfterParagraph(
+          app.segments,
+          app.selectedIndex,
+          paraIndex
+        );
+        app.segments = result.segments;
+        app.lastMessage = result.reason;
+        if (result.ok) app.accepted = false;
+      }
+
+      function accept() {
+        const result = SEGMENTATION.acceptAll(app.segments);
+        app.segments = result.segments;
+        app.accepted = true;
+        app.lastMessage = result.reason;
+      }
+
+      const ctx = {
+        loadBook: (id) => loadBook(id),
+        select: (i) => select(i),
+        join: () => join(),
+        split: (p) => split(p),
+        accept: () => accept(),
+        selectLongest: () => {
+          let best = 0;
+          app.segments.forEach((s, i) => {
+            if (s.wordCount > app.segments[best].wordCount) best = i;
+          });
+          select(best);
+        },
+        selectLastInFirstChapter: () => {
+          const firstChapterId = BOOKS[app.bookId].sections.find((s) => s.kind === 'chapter')?.id;
+          let idx = 0;
+          app.segments.forEach((s, i) => {
+            if (s.sectionId === firstChapterId) idx = i;
+          });
+          select(idx);
+        },
+      };
+
+      function resetScenario(id) {
+        const scenario = SCENARIOS.find((s) => s.id === id) || SCENARIOS[0];
+        app.scenarioId = scenario.id;
+        app.stepIndex = 0;
+        loadBook(scenario.book);
+        app.lastMessage = `Walkthrough ready: ${scenario.title}`;
+      }
+
+      function runScenarioStep(at) {
+        const scenario = SCENARIOS.find((s) => s.id === app.scenarioId);
+        if (!scenario || at !== app.stepIndex) return;
+        const step = scenario.steps[at];
+        step.run(ctx);
+        app.stepIndex = Math.min(app.stepIndex + 1, scenario.steps.length);
+      }
+
+      // ----- render -----
+      const els = {
+        book: document.getElementById('book'),
+        reset: document.getElementById('reset-book'),
+        summary: document.getElementById('summary'),
+        changed: document.getElementById('changed'),
+        segments: document.getElementById('segments'),
+        tabs: document.getElementById('tabs'),
+        scenario: document.getElementById('scenario'),
+        state: document.getElementById('state'),
+      };
+
+      function fillBookSelect() {
+        els.book.innerHTML = Object.values(BOOKS)
+          .map(
+            (b) =>
+              `<option value="${b.id}" ${b.id === app.bookId ? 'selected' : ''}>${b.title}</option>`
+          )
+          .join('');
+      }
+
+      function partTitle(seg, index) {
+        if (seg.sectionKind === 'credits') return `Opening · Part ${index + 1}`;
+        if (seg.sectionKind === 'closing') return `Closing · Part ${index + 1}`;
+        if (seg.heading) return `${seg.sectionTitle} · ${seg.heading}`;
+        // Count parts within section for a calm label
+        const sectionParts = app.segments.filter((s) => s.sectionId === seg.sectionId);
+        const local = sectionParts.findIndex((s) => s.id === seg.id) + 1;
+        if (sectionParts.length === 1) return seg.sectionTitle;
+        return `${seg.sectionTitle} · Part ${local}`;
+      }
+
+      function renderSummary() {
+        const s = SEGMENTATION.summarize(app.segments);
+        const book = BOOKS[app.bookId];
+        els.summary.innerHTML = `
+          <span class="chip ok">${s.partCount} parts</span>
+          <span class="chip">${s.totalWords} words</span>
+          <span class="chip ${s.longParts ? 'warn' : ''}">${s.longParts} over ~${s.maxWords} words</span>
+          <span class="chip ${s.shortParts ? 'warn' : ''}">${s.shortParts} under ~${s.minWords} words</span>
+          <span class="chip ${app.accepted ? 'ok' : ''}">${app.accepted ? 'Accepted' : 'Not accepted yet'}</span>
+          <span class="chip">${book.blurb}</span>
+        `;
+      }
+
+      function renderChanged() {
+        els.changed.innerHTML = app.lastMessage
+          ? `<p class="changed">${escapeHtml(app.lastMessage)}</p>`
+          : '';
+      }
+
+      function renderSegments() {
+        els.segments.innerHTML = app.segments
+          .map((seg, index) => {
+            const selected = index === app.selectedIndex;
+            const body = seg.paragraphs
+              .map(
+                (p, pi) =>
+                  `<div class="para" data-para="${pi}"><strong style="color:#8a968f;font-size:.72rem;font-family:Inter,sans-serif;font-weight:750;">¶ ${pi + 1}</strong> ${escapeHtml(p)}</div>`
+              )
+              .join('');
+            const canSplit = seg.paragraphs.length > 1;
+            const splitControls = canSplit
+              ? `<div class="split-points">${seg.paragraphs
+                  .slice(0, -1)
+                  .map(
+                    (_, pi) =>
+                      `<button type="button" class="mini" data-act="split" data-index="${index}" data-para="${pi}">Split after paragraph ${pi + 1}</button>`
+                  )
+                  .join('')}</div>`
+              : `<div class="split-points"><span class="chip">One paragraph — split not available</span></div>`;
+
+            return `
+              <article class="segment ${selected ? 'selected' : ''}" data-index="${index}">
+                <div class="segment-head">
+                  <div class="segment-title">${escapeHtml(partTitle(seg, index))}</div>
+                  <div class="segment-meta">${seg.wordCount} words</div>
+                </div>
+                <div class="segment-body">${body}</div>
+                <div class="segment-actions">
+                  <button type="button" class="mini" data-act="select" data-index="${index}">Select</button>
+                  <button type="button" class="mini" data-act="join" data-index="${index}">Combine with next part</button>
+                </div>
+                ${selected ? splitControls : ''}
+              </article>
+            `;
+          })
+          .join('');
+      }
+
+      function renderTabs() {
+        els.tabs.innerHTML = SCENARIOS.map(
+          (s) =>
+            `<button type="button" class="tab ${s.id === app.scenarioId ? 'active' : ''}" data-scenario="${s.id}">${escapeHtml(s.title)}</button>`
+        ).join('');
+      }
+
+      function renderScenario() {
+        const scenario = SCENARIOS.find((s) => s.id === app.scenarioId);
+        const steps = scenario.steps
+          .map((step, i) => {
+            const cls =
+              i < app.stepIndex ? 'step done' : i === app.stepIndex ? 'step current' : 'step';
+            return `<button type="button" class="${cls}" data-step="${i}" ${i !== app.stepIndex ? 'disabled' : ''}>${i + 1}. ${escapeHtml(step.label)}</button>`;
+          })
+          .join('');
+        els.scenario.innerHTML = `
+          <p>${escapeHtml(scenario.blurb)}</p>
+          <div class="steps">${steps}</div>
+          <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+            <button type="button" class="secondary" id="restart-scenario">Restart walkthrough</button>
+            <button type="button" class="quiet" id="accept-freeplay">Accept all parts</button>
+          </div>
+        `;
+      }
+
+      function renderState() {
+        const s = SEGMENTATION.summarize(app.segments);
+        const payload = {
+          book: BOOKS[app.bookId].title,
+          accepted: app.accepted,
+          selectedPart: app.selectedIndex + 1,
+          lastMessage: app.lastMessage,
+          summary: s,
+          parts: app.segments.map((seg, i) => ({
+            part: i + 1,
+            label: partTitle(seg, i),
+            section: seg.sectionTitle,
+            heading: seg.heading,
+            words: seg.wordCount,
+            paragraphs: seg.paragraphs.length,
+            preview: SEGMENTATION.preview(seg.paragraphs.join(' ')),
+          })),
+        };
+        els.state.textContent = JSON.stringify(payload, null, 2);
+      }
+
+      function render() {
+        fillBookSelect();
+        renderSummary();
+        renderChanged();
+        renderSegments();
+        renderTabs();
+        renderScenario();
+        renderState();
+      }
+
+      function escapeHtml(str) {
+        return String(str)
+          .replaceAll('&', '&amp;')
+          .replaceAll('<', '&lt;')
+          .replaceAll('>', '&gt;')
+          .replaceAll('"', '&quot;');
+      }
+
+      // events
+      els.book.addEventListener('change', () => {
+        loadBook(els.book.value);
+        render();
+      });
+      els.reset.addEventListener('click', () => {
+        loadBook(app.bookId);
+        app.lastMessage = 'Reset to automatic parts.';
+        render();
+      });
+
+      els.segments.addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-act]');
+        if (!btn) return;
+        const index = Number(btn.dataset.index);
+        const act = btn.dataset.act;
+        if (act === 'select') select(index);
+        if (act === 'join') {
+          select(index);
+          join();
+        }
+        if (act === 'split') {
+          select(index);
+          split(Number(btn.dataset.para));
+        }
+        render();
+      });
+
+      els.tabs.addEventListener('click', (e) => {
+        const tab = e.target.closest('button[data-scenario]');
+        if (!tab) return;
+        resetScenario(tab.dataset.scenario);
+        render();
+      });
+
+      els.scenario.addEventListener('click', (e) => {
+        const stepBtn = e.target.closest('button[data-step]');
+        if (stepBtn) {
+          runScenarioStep(Number(stepBtn.dataset.step));
+          render();
+          return;
+        }
+        if (e.target.id === 'restart-scenario') {
+          resetScenario(app.scenarioId);
+          render();
+          return;
+        }
+        if (e.target.id === 'accept-freeplay') {
+          accept();
+          render();
+        }
+      });
+
+      // boot
+      resetScenario('happy');
+      render();
+    </script>
+  </body>
+</html>
