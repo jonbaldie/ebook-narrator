@@ -4,7 +4,7 @@ This repository has one domain context.
 
 ## Before you explore
 
-- Read root `CONTEXT.md` if it exists.
+- Read root `GLOSSARY.md` if it exists.
 - Read related files in `docs/adr/` if they exist.
 - If these files do not exist, continue without a report.
 
@@ -14,7 +14,7 @@ The `domain-modeling` skill creates these files when the team needs them.
 
 ```
 /
-├── CONTEXT.md
+├── GLOSSARY.md
 ├── docs/adr/
 │   ├── 0001-example.md
 │   └── 0002-example.md
@@ -23,7 +23,7 @@ The `domain-modeling` skill creates these files when the team needs them.
 
 ## Terms and decisions
 
-Use the terms in `CONTEXT.md` when you name a domain item. Do not use a different word for a defined term.
+Use the terms in `GLOSSARY.md` when you name a domain item. Do not use a different word for a defined term.
 
 If an item has no defined term, check if the new term is necessary. Record a real gap for the `domain-modeling` skill.
 
