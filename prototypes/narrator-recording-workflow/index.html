@@ -222,7 +222,7 @@
       function act(action) {
         const [name, value] = action.split(':');
         if (name === 'home') go('home');
-        if (name === 'new-project') go('choose-book');
+        if (name === 'new-project' || name === 'choose-book') go('choose-book');
         if (name === 'choose-epub') go('book-ready');
         if (name === 'book-ready') go('book-ready');
         if (name === 'microphone') go('microphone');
