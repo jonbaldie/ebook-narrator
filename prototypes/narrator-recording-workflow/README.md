@@ -19,3 +19,5 @@ The supporting files are:
 - `previous-busy-options.html` — the rejected, busier options
 
 The buttons change in-memory test state only. The prototype label shows the current test state.
+
+The [exploratory test report](../../docs/exploratory-testing/2026-10-28-workflow.md) records the workflow test and its limits.

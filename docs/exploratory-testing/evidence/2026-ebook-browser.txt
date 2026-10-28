@@ -1,0 +1,19 @@
+registered server pid=1382578 port=18765
+start: home · part 1 · ready · 0 saved | What would you like to do?
+new: choose-book · part 1 · ready · 0 saved | Choose your book
+book: book-ready · part 1 · ready · 0 saved | Your book is ready
+test: microphone-result · part 1 · ready · 0 saved | Can you hear yourself clearly?
+ready: recording · part 1 · ready · 0 saved | Ready when you are
+paused: recording · part 1 · paused · 0 saved | Recording paused
+stopped first: recording · part 2 · stopped · 1 saved | Ready when you are
+browse: Chapter One · Part 1 | Recording saved | Review | Chapter One · Part 2 | Not recorded yet | Chapter Two · Part 1 | Not recorded yet
+trim done: review · part 2 · stopped · 1 saved | Listen when you are ready
+record again: recording · part 1 · stopped · 1 saved | Ready when you are
+complete: ready-to-check · part 3 · stopped · 3 saved | Your audiobook is ready to check
+export: exported · part 3 · stopped · 3 saved | Export complete
+reload: home · part 1 · ready · 0 saved | What would you like to do?
+navigation during recording 1: recording · part 2 · recording · 0 saved | You are recording
+replay 1: Chapter One · Part 1 | Not recorded yet | Chapter One · Part 2 | Recording saved | Review | Chapter Two · Part 1 | Not recorded yet
+navigation during recording 2: recording · part 2 · recording · 0 saved | You are recording
+replay 2: Chapter One · Part 1 | Not recorded yet | Chapter One · Part 2 | Recording saved | Review | Chapter Two · Part 1 | Not recorded yet
+server stopped 1382578
