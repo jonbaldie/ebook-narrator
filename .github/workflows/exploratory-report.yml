@@ -4,13 +4,13 @@ on:
   pull_request:
     paths:
       - 'docs/exploratory-testing/**'
-      - 'prototypes/narrator-recording-workflow/README.md'
+      - 'prototypes/narrator-recording-workflow/**'
       - '.github/workflows/exploratory-report.yml'
   push:
     branches: [main]
     paths:
       - 'docs/exploratory-testing/**'
-      - 'prototypes/narrator-recording-workflow/README.md'
+      - 'prototypes/narrator-recording-workflow/**'
       - '.github/workflows/exploratory-report.yml'
 
 jobs:
@@ -34,3 +34,11 @@ jobs:
                   if not target.startswith(('http:', 'https:', '#')):
                       assert (source.parent / target.split('#')[0]).exists(), f'{source}: {target}'
           PY
+      - name: Test book selection in Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.52.0
+          npx playwright install --with-deps chromium
+          python3 -m http.server 18765 --bind 127.0.0.1 --directory prototypes/narrator-recording-workflow &
+          server=$!
+          trap 'kill "$server"' EXIT
+          node prototypes/narrator-recording-workflow/back.test.js
