@@ -1,0 +1,6 @@
+registered server pid=1384222 port=18765
+replay 1 before: Your book is ready
+replay 1 after: Your book is ready | book-ready · part 1 · ready · 0 saved
+replay 2 before: Your book is ready
+replay 2 after: Your book is ready | book-ready · part 1 · ready · 0 saved
+server stopped 1384222

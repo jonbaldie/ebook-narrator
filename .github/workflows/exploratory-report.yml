@@ -1,0 +1,36 @@
+name: Exploratory report
+
+on:
+  pull_request:
+    paths:
+      - 'docs/exploratory-testing/**'
+      - 'prototypes/narrator-recording-workflow/README.md'
+      - '.github/workflows/exploratory-report.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'docs/exploratory-testing/**'
+      - 'prototypes/narrator-recording-workflow/README.md'
+      - '.github/workflows/exploratory-report.yml'
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Check report links and scripts
+        run: |
+          git diff --check HEAD^ HEAD
+          node --check docs/exploratory-testing/evidence/2026-ebook-journey.js
+          node --check docs/exploratory-testing/evidence/2026-ebook-back.js
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          for source in [Path('docs/exploratory-testing/2026-10-28-workflow.md'), Path('prototypes/narrator-recording-workflow/README.md')]:
+              for target in re.findall(r'\]\(([^)]+)\)', source.read_text()):
+                  if not target.startswith(('http:', 'https:', '#')):
+                      assert (source.parent / target.split('#')[0]).exists(), f'{source}: {target}'
+          PY
