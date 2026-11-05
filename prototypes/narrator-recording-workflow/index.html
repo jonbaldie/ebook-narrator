@@ -78,7 +78,7 @@
         ['Chapter Two · Part 1', 'By noon, the letter had changed three times. Each new sentence told her where not to go.'],
       ];
 
-      const flow = {
+      const newFlow = () => ({
         screen: 'home',
         segment: 0,
         recordState: 'ready',
@@ -88,7 +88,9 @@
         selected: 0,
         trimSet: false,
         check: 0,
-      };
+      });
+      let flow = newFlow();
+      let timer;
 
       const checks = [
         ['Every part has a recording', 'The Narration Application found a selected recording for every part.'],
@@ -209,9 +211,9 @@
             return;
           }
           render();
-          window.setTimeout(tick, 700);
+          timer = window.setTimeout(tick, 700);
         };
-        window.setTimeout(tick, 700);
+        timer = window.setTimeout(tick, 700);
       }
 
       function go(screen) {
@@ -222,8 +224,15 @@
       function act(action) {
         const [name, value] = action.split(':');
         if (name === 'home') go('home');
-        if (name === 'new-project' || name === 'choose-book') go('choose-book');
-        if (name === 'choose-epub') go('book-ready');
+        if (name === 'new-project') {
+          window.clearTimeout(timer);
+          go('choose-book');
+        }
+        if (name === 'choose-book') go('choose-book');
+        if (name === 'choose-epub') {
+          flow = newFlow();
+          go('book-ready');
+        }
         if (name === 'book-ready') go('book-ready');
         if (name === 'microphone') go('microphone');
         if (name === 'test-microphone') go('microphone-result');
@@ -237,11 +246,11 @@
           flow.saveNote = 'Saved';
           if (flow.saved.every(Boolean)) {
             render();
-            window.setTimeout(() => go('ready-to-check'), 500);
+            timer = window.setTimeout(() => go('ready-to-check'), 500);
           } else {
             flow.segment = Math.min(flow.segment + 1, parts.length - 1);
             render();
-            window.setTimeout(() => { flow.saveNote = ''; render(); }, 2200);
+            timer = window.setTimeout(() => { flow.saveNote = ''; render(); }, 2200);
           }
         }
         if (name === 'previous-text') { flow.segment = Math.max(0, flow.segment - 1); flow.saveNote = ''; render(); }

@@ -38,7 +38,7 @@ jobs:
                   if not target.startswith(('http:', 'https:', '#')):
                       assert (source.parent / target.split('#')[0]).exists(), f'{source}: {target}'
           PY
-      - name: Test book selection in Chromium
+      - name: Test workflow in Chromium
         run: |
           npm ci
           npx playwright install --with-deps chromium
@@ -46,3 +46,4 @@ jobs:
           server=$!
           trap 'kill "$server"' EXIT
           node prototypes/narrator-recording-workflow/back.test.js
+          node prototypes/narrator-recording-workflow/new-project.test.js
