@@ -226,11 +226,13 @@
         if (name === 'home') go('home');
         if (name === 'new-project') {
           window.clearTimeout(timer);
-          flow = newFlow();
           go('choose-book');
         }
         if (name === 'choose-book') go('choose-book');
-        if (name === 'choose-epub') go('book-ready');
+        if (name === 'choose-epub') {
+          flow = newFlow();
+          go('book-ready');
+        }
         if (name === 'book-ready') go('book-ready');
         if (name === 'microphone') go('microphone');
         if (name === 'test-microphone') go('microphone-result');

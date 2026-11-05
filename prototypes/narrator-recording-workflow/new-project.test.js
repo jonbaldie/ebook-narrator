@@ -13,6 +13,11 @@ const { chromium } = require('playwright');
     await click('Stop');
     await click('← My Project');
     await click('＋ New Project');
+    await click('← Back');
+    await click('Continue recording');
+    assert.equal(await page.locator('#test-state').innerText(), 'recording · part 3 · stopped · 1 saved');
+    await click('← My Project');
+    await click('＋ New Project');
     await click('Choose your EPUB file');
     await click('← Back');
     assert.equal(await page.locator('h1').innerText(), 'Choose your book');
@@ -34,15 +39,17 @@ const { chromium } = require('playwright');
     ]);
     console.log('New Project starts empty and contains only its own Take');
 
+    await page.clock.install();
     await page.goto('http://127.0.0.1:18765/');
     await click('Continue recording');
     for (let part = 0; part < 3; part++) {
       await click('Record');
+      await page.clock.runFor(2100);
       await click('Stop');
     }
     await click('← My Project');
     await click('＋ New Project');
-    await page.waitForTimeout(600);
+    await page.clock.runFor(600);
     assert.equal(await page.locator('h1').innerText(), 'Choose your book');
     console.log('A previous Project cannot open final review after New Project');
   } finally {
