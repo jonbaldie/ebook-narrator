@@ -20,4 +20,7 @@ The supporting files are:
 
 The buttons change in-memory test state only. The prototype label shows the current test state.
 
-The [exploratory test report](../../docs/exploratory-testing/2026-10-28-workflow.md) records the workflow test and its limits.
+The exploratory test reports record the workflow tests and their limits:
+
+- [2026-10-28 workflow test](../../docs/exploratory-testing/2026-10-28-workflow.md)
+- [2026-11-05 workflow test](../../docs/exploratory-testing/2026-11-05-workflow.md)
