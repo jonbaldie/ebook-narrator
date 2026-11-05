@@ -1,0 +1,12 @@
+book choice and microphone retry: Ready when you are | recording · part 1 · ready · 0 saved
+pause: Recording paused | recording · part 1 · paused · 0 saved
+first stop: Ready when you are | recording · part 2 · stopped · 1 saved
+recordings: Chapter One · Part 1 | Recording saved | Review | Chapter One · Part 2 | Not recorded yet | Chapter Two · Part 1 | Not recorded yet
+record again: Ready when you are | recording · part 1 · stopped · 1 saved
+all parts: Your audiobook is ready to check | ready-to-check · part 3 · stopped · 3 saved
+export: Export complete | exported · part 3 · stopped · 3 saved
+reload: What would you like to do? | home · part 1 · ready · 0 saved
+new project after prior recording 1: Ready when you are | recording · part 2 · stopped · 1 saved
+new project recordings 1: Chapter One · Part 1 | Recording saved | Review | Chapter One · Part 2 | Not recorded yet | Chapter Two · Part 1 | Not recorded yet
+new project after prior recording 2: Ready when you are | recording · part 2 · stopped · 1 saved
+new project recordings 2: Chapter One · Part 1 | Recording saved | Review | Chapter One · Part 2 | Not recorded yet | Chapter Two · Part 1 | Not recorded yet
