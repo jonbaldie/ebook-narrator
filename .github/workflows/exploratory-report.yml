@@ -3,12 +3,16 @@ name: Exploratory report
 on:
   pull_request:
     paths:
+      - 'package.json'
+      - 'package-lock.json'
       - 'docs/exploratory-testing/**'
       - 'prototypes/narrator-recording-workflow/**'
       - '.github/workflows/exploratory-report.yml'
   push:
     branches: [main]
     paths:
+      - 'package.json'
+      - 'package-lock.json'
       - 'docs/exploratory-testing/**'
       - 'prototypes/narrator-recording-workflow/**'
       - '.github/workflows/exploratory-report.yml'
@@ -36,7 +40,7 @@ jobs:
           PY
       - name: Test book selection in Chromium
         run: |
-          npm install --no-save --no-package-lock playwright@1.52.0
+          npm ci
           npx playwright install --with-deps chromium
           python3 -m http.server 18765 --bind 127.0.0.1 --directory prototypes/narrator-recording-workflow &
           server=$!
